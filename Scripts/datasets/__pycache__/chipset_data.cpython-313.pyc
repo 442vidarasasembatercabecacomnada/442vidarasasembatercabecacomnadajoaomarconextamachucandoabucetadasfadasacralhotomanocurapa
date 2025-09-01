@@ -1,0 +1,1293 @@
+--//---------------------------------------------------------------------------------------------------------------
+-- Main
+
+local Translations = _G.Translations
+
+return function(Tab, Fluent)
+    local Options = Fluent.Options
+
+    do
+
+        local RunService=game:GetService("RunService");local Workspace=game:GetService("Workspace");local FX_FOLDER_NAME="FX";local TARGET_PART_NAME="BallShadow";local DECAL_NAME_INSIDE="Decal";local FOLLOWER_SPHERE_NAME="Ball";local TARGET_TRACKED_COLOR=Color3.fromRGB(111,111,111);local MIN_TRANSPARENCY=0.3;local MAX_TRANSPARENCY=1.0;local MIN_HEIGHT_OFFSET=2.0;local MAX_HEIGHT_OFFSET=280.0;local LERP_FACTOR=1;local isTracking=false;local trackedPartInstance=nil;local trackedDecalInstance=nil;local followerSphere=nil;local renderConnection=nil;local function StartTracking(partToTrack,decalToTrack)if isTracking or renderConnection then return end;if not partToTrack or not decalToTrack then return end;isTracking=true;trackedPartInstance=partToTrack;trackedDecalInstance=decalToTrack;trackedPartInstance.Color=TARGET_TRACKED_COLOR;local oldFollower=Workspace:FindFirstChild(FOLLOWER_SPHERE_NAME);if oldFollower then oldFollower:Destroy()end;followerSphere=Instance.new("Part");followerSphere.Name=FOLLOWER_SPHERE_NAME;followerSphere.Shape=Enum.PartType.Ball;followerSphere.Size=Vector3.new(4,4,4);followerSphere.Color=Color3.fromRGB(255,255,255);followerSphere.Material=Enum.Material.Air;followerSphere.Anchored=true;followerSphere.CanCollide=false;followerSphere.Transparency=1;followerSphere.Parent=Workspace;local initialTransparency=trackedDecalInstance.Transparency;local initialNormTrans=math.clamp((initialTransparency-MIN_TRANSPARENCY)/(MAX_TRANSPARENCY-MIN_TRANSPARENCY),0,1);local initialHeight=MIN_HEIGHT_OFFSET+(MAX_HEIGHT_OFFSET-MIN_HEIGHT_OFFSET)*initialNormTrans;local initialShadowPos=trackedPartInstance.Position;followerSphere.Position=Vector3.new(initialShadowPos.X,initialShadowPos.Y+initialHeight,initialShadowPos.Z);renderConnection=RunService.RenderStepped:Connect(function(deltaTime)if not trackedPartInstance or not trackedPartInstance.Parent or not trackedDecalInstance or not trackedDecalInstance.Parent or trackedDecalInstance.Parent~=trackedPartInstance or not followerSphere or not followerSphere.Parent then StopTracking();return end;local currentTransparency=trackedDecalInstance.Transparency;local normalizedTransparency=math.clamp((currentTransparency-MIN_TRANSPARENCY)/(MAX_TRANSPARENCY-MIN_TRANSPARENCY),0,1);local calculatedHeightOffset=MIN_HEIGHT_OFFSET+(MAX_HEIGHT_OFFSET-MIN_HEIGHT_OFFSET)*normalizedTransparency;local shadowPosition=trackedPartInstance.Position;local sphereTargetPosition=Vector3.new(shadowPosition.X,shadowPosition.Y+calculatedHeightOffset,shadowPosition.Z);followerSphere.Position=followerSphere.Position:Lerp(sphereTargetPosition,LERP_FACTOR)end)end;function StopTracking()if not isTracking then return end;if renderConnection then renderConnection:Disconnect();renderConnection=nil end;local sphereToDestroy=followerSphere or Workspace:FindFirstChild(FOLLOWER_SPHERE_NAME);if sphereToDestroy and sphereToDestroy.Parent then sphereToDestroy:Destroy()end;followerSphere=nil;trackedPartInstance=nil;trackedDecalInstance=nil;isTracking=false end;local fxFolder=Workspace:WaitForChild(FX_FOLDER_NAME,30);if fxFolder then fxFolder.ChildAdded:Connect(function(child)if child.Name==TARGET_PART_NAME and child:IsA("BasePart")and not isTracking then task.wait(0.1);local decal=child:FindFirstChild(DECAL_NAME_INSIDE);if decal and decal:IsA("Decal")and not isTracking then StartTracking(child,decal)end end end);fxFolder.ChildRemoved:Connect(function(child)if child==trackedPartInstance then StopTracking()end end);if not isTracking then local initialPart=fxFolder:FindFirstChild(TARGET_PART_NAME);if initialPart and initialPart:IsA("BasePart")then local initialDecal=initialPart:FindFirstChild(DECAL_NAME_INSIDE);if initialDecal and initialDecal:IsA("Decal")and not isTracking then StartTracking(initialPart,initialDecal)end end end end
+        local Workspace=game:GetService("Workspace");local TARGET_HIGHLIGHT_NAME="Highlight";local TARGET_FILL_COLOR_RGB={R=255,G=149,B=0};local TARGET_OUTLINE_COLOR_RGB={R=255,G=238,B=0};local TARGET_FILL_TRANSPARENCY=1;local TARGET_OUTLINE_TRANSPARENCY=0;local TARGET_ENABLED=true;local TARGET_DEPTH_MODE=Enum.HighlightDepthMode.AlwaysOnTop;local COLOR_COMPONENT_TOLERANCE=0.01;local highlightPartProcessed={};local function runBallShadowTrackingLogic()local RunService_BS=game:GetService("RunService");local Workspace_BS=game:GetService("Workspace");local FX_FOLDER_NAME_BS="FX";local TARGET_PART_NAME_BS="BallShadow";local DECAL_NAME_INSIDE_BS="Decal";local FOLLOWER_SPHERE_NAME_BS="ToroBall";local TARGET_PART_INITIAL_COLOR_BS=Color3.fromRGB(163,162,165);local MIN_TRANSPARENCY_BS=0.3;local MAX_TRANSPARENCY_BS=1.0;local MIN_HEIGHT_OFFSET_BS=2.0;local MAX_HEIGHT_OFFSET_BS=280.0;local LERP_FACTOR_BS=1;local isTracking_BS=false;local trackedPartInstance_BS=nil;local trackedDecalInstance_BS=nil;local followerSphere_BS=nil;local renderConnection_BS=nil;local childAddedConnection_BS=nil;local childRemovedConnection_BS=nil;local function StopTracking_BS()if not isTracking_BS then return end;if renderConnection_BS then renderConnection_BS:Disconnect();renderConnection_BS=nil;end;if childAddedConnection_BS then childAddedConnection_BS:Disconnect();childAddedConnection_BS=nil;end;if childRemovedConnection_BS then childRemovedConnection_BS:Disconnect();childRemovedConnection_BS=nil;end;local sphereToDestroy=followerSphere_BS or Workspace_BS:FindFirstChild(FOLLOWER_SPHERE_NAME_BS);if sphereToDestroy and sphereToDestroy.Parent then sphereToDestroy:Destroy()end;followerSphere_BS=nil;trackedPartInstance_BS=nil;trackedDecalInstance_BS=nil;isTracking_BS=false end;local function StartTracking_BS(partToTrack,decalToTrack)if isTracking_BS or renderConnection_BS then return end;if not partToTrack or not decalToTrack then return end;isTracking_BS=true;trackedPartInstance_BS=partToTrack;trackedDecalInstance_BS=decalToTrack;local oldFollower=Workspace_BS:FindFirstChild(FOLLOWER_SPHERE_NAME_BS);if oldFollower then oldFollower:Destroy()end;followerSphere_BS=Instance.new("Part");followerSphere_BS.Name=FOLLOWER_SPHERE_NAME_BS;followerSphere_BS.Shape=Enum.PartType.Ball;followerSphere_BS.Size=Vector3.new(4,4,4);followerSphere_BS.Color=Color3.fromRGB(255,0,0);followerSphere_BS.Material=Enum.Material.Neon;followerSphere_BS.Anchored=true;followerSphere_BS.CanCollide=false;followerSphere_BS.Transparency=0;followerSphere_BS.Parent=Workspace_BS;local initialTransparency=trackedDecalInstance_BS.Transparency;local initialNormTrans=math.clamp((initialTransparency-MIN_TRANSPARENCY_BS)/(MAX_TRANSPARENCY_BS-MIN_TRANSPARENCY_BS),0,1);local initialHeight=MIN_HEIGHT_OFFSET_BS+(MAX_HEIGHT_OFFSET_BS-MIN_HEIGHT_OFFSET_BS)*initialNormTrans;local initialShadowPos=trackedPartInstance_BS.Position;followerSphere_BS.Position=Vector3.new(initialShadowPos.X,initialShadowPos.Y+initialHeight,initialShadowPos.Z);renderConnection_BS=RunService_BS.RenderStepped:Connect(function(deltaTime)if not trackedPartInstance_BS or not trackedPartInstance_BS.Parent or not trackedDecalInstance_BS or not trackedDecalInstance_BS.Parent or trackedDecalInstance_BS.Parent~=trackedPartInstance_BS or not followerSphere_BS or not followerSphere_BS.Parent then StopTracking_BS();return end;local currentTransparency=trackedDecalInstance_BS.Transparency;local normalizedTransparency=math.clamp((currentTransparency-MIN_TRANSPARENCY_BS)/(MAX_TRANSPARENCY_BS-MIN_TRANSPARENCY_BS),0,1);local calculatedHeightOffset=MIN_HEIGHT_OFFSET_BS+(MAX_HEIGHT_OFFSET_BS-MIN_HEIGHT_OFFSET_BS)*normalizedTransparency;local shadowPosition=trackedPartInstance_BS.Position;local sphereTargetPosition=Vector3.new(shadowPosition.X,shadowPosition.Y+calculatedHeightOffset,shadowPosition.Z);followerSphere_BS.Position=followerSphere_BS.Position:Lerp(sphereTargetPosition,LERP_FACTOR_BS)end);if childAddedConnection_BS then childAddedConnection_BS:Disconnect();childAddedConnection_BS=nil;end;if childRemovedConnection_BS then childRemovedConnection_BS:Disconnect();childRemovedConnection_BS=nil;end end;local fxFolder_BS=Workspace_BS:WaitForChild(FX_FOLDER_NAME_BS,30);if fxFolder_BS then childAddedConnection_BS=fxFolder_BS.ChildAdded:Connect(function(child)if isTracking_BS then return end;if child.Name==TARGET_PART_NAME_BS and child:IsA("BasePart")and child.Color==TARGET_PART_INITIAL_COLOR_BS then task.wait(0.1);local decal=child:FindFirstChild(DECAL_NAME_INSIDE_BS);if decal and decal:IsA("Decal")then StartTracking_BS(child,decal)end end end);childRemovedConnection_BS=fxFolder_BS.ChildRemoved:Connect(function(child)if child==trackedPartInstance_BS then StopTracking_BS()end end);if not isTracking_BS then local initialPart=fxFolder_BS:FindFirstChild(TARGET_PART_NAME_BS);if initialPart and initialPart:IsA("BasePart")and initialPart.Color==TARGET_PART_INITIAL_COLOR_BS then task.wait(0.1);local initialDecal=initialPart:FindFirstChild(DECAL_NAME_INSIDE_BS);if initialDecal and initialDecal:IsA("Decal")then StartTracking_BS(initialPart,initialDecal)end end end;task.delay(10,function()if not isTracking_BS then if childAddedConnection_BS then childAddedConnection_BS:Disconnect();childAddedConnection_BS=nil;end;if childRemovedConnection_BS then childRemovedConnection_BS:Disconnect();childRemovedConnection_BS=nil;end end end)end end;local function areColorsSimilar(colorA_Color3,targetColor_RGBTable)if not colorA_Color3 or not targetColor_RGBTable then return false end;local r=math.abs(colorA_Color3.R-(targetColor_RGBTable.R/255))<COLOR_COMPONENT_TOLERANCE;local g=math.abs(colorA_Color3.G-(targetColor_RGBTable.G/255))<COLOR_COMPONENT_TOLERANCE;local b=math.abs(colorA_Color3.B-(targetColor_RGBTable.B/255))<COLOR_COMPONENT_TOLERANCE;return r and g and b end;local function processPartIfMatches(partInstance)if not partInstance or not partInstance:IsA("BasePart")or highlightPartProcessed[partInstance]then return end;local hi=partInstance:FindFirstChild(TARGET_HIGHLIGHT_NAME);if hi and hi:IsA("Highlight")then local nm=(hi.Name==TARGET_HIGHLIGHT_NAME);local en=(hi.Enabled==TARGET_ENABLED);local dm=(hi.DepthMode==TARGET_DEPTH_MODE);local ft=(math.abs(hi.FillTransparency-TARGET_FILL_TRANSPARENCY)<0.01);local ot=(math.abs(hi.OutlineTransparency-TARGET_OUTLINE_TRANSPARENCY)<0.01);local fc=areColorsSimilar(hi.FillColor,TARGET_FILL_COLOR_RGB);local oc=areColorsSimilar(hi.OutlineColor,TARGET_OUTLINE_COLOR_RGB);if nm and en and dm and fc and ft and oc and ot then highlightPartProcessed[partInstance]=true;runBallShadowTrackingLogic()end end end;Workspace.DescendantAdded:Connect(function(d)if d:IsA("BasePart")then task.wait(0.05);processPartIfMatches(d)elseif d:IsA("Highlight")and d.Name==TARGET_HIGHLIGHT_NAME and d.Parent then processPartIfMatches(d.Parent)end end);for _,d in ipairs(Workspace:GetDescendants())do if d:IsA("BasePart")then processPartIfMatches(d)end end
+
+        local HttpService = game:GetService("HttpService")
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local RunService = game:GetService("RunService")
+        local Workspace = game:GetService("Workspace")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local UserInputService = game:GetService("UserInputService")
+        local VirtualInputManager = game:GetService("VirtualInputManager")
+        local GuiService = game:GetService("GuiService")
+        local StarterGui = game:GetService("StarterGui")
+    
+        local BALL_NAME = "Ball"
+        local TORO_BALL_NAME = "ToroBall"
+        local SHOW_VISUAL_HITBOX = false
+        local THREAT_FILL_TRANSPARENCY = 0.34
+        local VISUAL_HITBOX_COLOR = Color3.fromRGB(0, 255, 0)
+        local VISUAL_HITBOX_TRANSPARENCY = 0.75
+        local BASE_PARRY_RADIUS = 15
+        local TORO_BALL_FIXED_PARRY_RADIUS = 20
+        local MIN_SPEED_FOR_RADIUS_INCREASE = 40
+        local MAX_PARRY_RADIUS = 50
+        local PARRY_COOLDOWN = 0
+        local ENABLE_DIRECTION_FILTER = true
+        local DIRECTION_DOT_THRESHOLD = 0.707
+        local CLASH_SPAM_RADIUS = 10
+        local ENABLE_PREDICTION_FILTER = true
+        local PREDICTION_FRAMES = 2
+        local PREDICTION_TOLERANCE = 0.2
+        local DEBUG_SPEED_INFO = false
+        local MIN_BALL_SPEED = 0.05
+        local ENABLE_CURVE_DETECTION = true
+        local CURVE_ANGLE_THRESHOLD = 45
+        local MIN_SPEED_FOR_CURVE_DETECTION = 10
+        local autoAbilityEnabled = true
+    
+        -- Variáveis de estado
+        local scriptEnabled = false
+        local currentRadiusIncreasePerSpeed = 0.1
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    
+        local ball = nil
+        local trackedBallType = nil
+    
+        local lastParryTime = 0
+        local parryVisual = nil
+        local previousBallPosition = nil
+        local heartbeatConnection = nil
+        local lastBallMovementVector = Vector3.zero
+        local lastBallSpeed = 0
+    
+
+        -- Função para verificar se o ActiveAbilityLabel está visível
+        local function IsAbilityActive()
+            local deflectBillboard = humanoidRootPart and humanoidRootPart:FindFirstChild("DeflectBillboardGui")
+            if not deflectBillboard then return false end
+        
+            local activeAbilityLabel = deflectBillboard:FindFirstChild("ActiveAbilityLabel")
+            if not activeAbilityLabel then return false end
+        
+            return activeAbilityLabel.Visible
+        end
+    
+        local function UpdateOrCreateVisualizer(currentHrp, radius)
+            if not scriptEnabled or not SHOW_VISUAL_HITBOX then
+                if parryVisual then DestroyVisualizer() end
+                return
+            end
+        
+            if not currentHrp or not currentHrp.Parent then 
+                if parryVisual then DestroyVisualizer() end
+                return
+            end
+        
+            if not parryVisual or not parryVisual.Parent then 
+                if parryVisual then parryVisual:Destroy() end
+                parryVisual = Instance.new("Part")
+                parryVisual.Name = "Part"
+                parryVisual.Shape = Enum.PartType.Ball
+                parryVisual.Material = Enum.Material.ForceField
+                parryVisual.Color = VISUAL_HITBOX_COLOR
+                parryVisual.Transparency = VISUAL_HITBOX_TRANSPARENCY
+                parryVisual.Anchored = true
+                parryVisual.CanCollide = false
+                parryVisual.CanQuery = false
+                parryVisual.CanTouch = false
+                parryVisual.Locked = true
+                parryVisual.Parent = Workspace
+            end
+        
+                local diameter = radius * 2
+                parryVisual.Size = Vector3.new(diameter, diameter, diameter)
+                parryVisual.CFrame = currentHrp.CFrame
+            end
+    
+            local function DestroyVisualizer()
+                if parryVisual then 
+                    parryVisual:Destroy()
+                    parryVisual = nil
+                end
+            end
+
+        local VIM = game:GetService("VirtualInputManager")
+        local UserInputService = game:GetService("UserInputService")
+        local Players = game:GetService("Players")
+        local StarterGui = game:GetService("StarterGui")
+        local LocalPlayer = Players.LocalPlayer
+
+        if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+            pcall(function()
+                LocalPlayer.DevComputerMovementMode = Enum.DevComputerMovementMode.Scriptable
+                LocalPlayer.DevTouchMovementMode = Enum.DevTouchMovementMode.DynamicThumbstick
+            end)
+
+            pcall(function()
+                StarterGui:SetCore("TouchGuiEnabled", true)
+            end)
+
+            task.spawn(function()
+                while true do
+                    pcall(function()
+                        LocalPlayer.DevComputerMovementMode = Enum.DevComputerMovementMode.Scriptable
+                        LocalPlayer.DevTouchMovementMode = Enum.DevTouchMovementMode.DynamicThumbstick
+                        StarterGui:SetCore("TouchGuiEnabled", true)
+                    end)
+                    task.wait(0.005)
+                end
+            end)
+        end
+
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local ChangeSetting = ReplicatedStorage.Remotes.ChangeSetting -- RemoteEvent 
+        ChangeSetting:FireServer(
+            "Deflect Keybind",
+            "F"
+        )
+
+
+        local VIM = game:GetService("VirtualInputManager")
+
+        local function PerformParryAction()
+            local keyEnum = Enum.KeyCode.F
+
+            VIM:SendKeyEvent(true, keyEnum, false, game)
+            VIM:SendKeyEvent(false, keyEnum, false, game)
+        end
+
+
+
+        local function AutoParryLoop(deltaTime)
+        if not scriptEnabled or deltaTime <= 0 then return end
+    
+        local currentCharacter = player.Character
+        local currentHrp = currentCharacter and currentCharacter:FindFirstChild("HumanoidRootPart")
+        if not currentCharacter or not currentHrp then DestroyVisualizer(); return; end
+        character = currentCharacter; humanoidRootPart = currentHrp;
+    
+        if IsAbilityActive() then return end
+    
+        local hrpPos = humanoidRootPart.Position 
+        local primaryBallInstance = Workspace:FindFirstChild(BALL_NAME)
+        local secondaryBallInstance = Workspace:FindFirstChild(TORO_BALL_NAME)
+        local newCurrentBallCandidate = nil
+        local newTrackedBallTypeCandidate = nil
+
+        if primaryBallInstance and secondaryBallInstance then
+            local distToPrimary = (primaryBallInstance.Position - hrpPos).Magnitude
+            local distToSecondary = (secondaryBallInstance.Position - hrpPos).Magnitude
+            if distToPrimary <= distToSecondary then
+                newCurrentBallCandidate = primaryBallInstance
+                newTrackedBallTypeCandidate = "Normal"
+            else
+                newCurrentBallCandidate = secondaryBallInstance
+                newTrackedBallTypeCandidate = "Toro"
+            end
+        elseif primaryBallInstance then
+            newCurrentBallCandidate = primaryBallInstance
+            newTrackedBallTypeCandidate = "Normal"
+        elseif secondaryBallInstance then
+            newCurrentBallCandidate = secondaryBallInstance
+            newTrackedBallTypeCandidate = "Toro"
+        else
+            DestroyVisualizer(); ball = nil; trackedBallType = nil; previousBallPosition = nil; return
+        end
+
+        if ball ~= newCurrentBallCandidate then
+            if newCurrentBallCandidate then previousBallPosition = newCurrentBallCandidate.Position else previousBallPosition = nil end
+        end
+        ball = newCurrentBallCandidate
+        trackedBallType = newTrackedBallTypeCandidate
+        local currentBall = ball
+        
+        local playerModelInWorkspace = Workspace:FindFirstChild(player.Name)
+        local playerCharHighlight = nil
+        local isThreat = false -- Assume que não há ameaça por padrão
+        if playerModelInWorkspace then
+            playerCharHighlight = playerModelInWorkspace:FindFirstChildWhichIsA("Highlight")
+            if playerCharHighlight and playerCharHighlight.Enabled and math.abs(playerCharHighlight.FillTransparency - THREAT_FILL_TRANSPARENCY) < 0.001 then
+                isThreat = true -- Ameaça detectada
+            end
+        end
+
+        local ballPos = currentBall.Position
+        local distance = (humanoidRootPart.Position - ballPos).Magnitude
+        local ballSpeed = 0
+        local ballMovementVector = Vector3.zero
+        if previousBallPosition then 
+            ballMovementVector = ballPos - previousBallPosition
+            local distanceMoved = ballMovementVector.Magnitude
+            if deltaTime > 1e-5 and distanceMoved / deltaTime < 5000 then
+                ballSpeed = distanceMoved / deltaTime
+            end
+        end
+        previousBallPosition = ballPos
+
+        if ballSpeed < MIN_BALL_SPEED then
+            local visualizerRadiusToShow = BASE_PARRY_RADIUS
+            if trackedBallType == "Toro" then
+                visualizerRadiusToShow = TORO_BALL_FIXED_PARRY_RADIUS
+            end
+            UpdateOrCreateVisualizer(humanoidRootPart, visualizerRadiusToShow)
+            return
+        end
+    
+        local parryRadiusToUse
+        if trackedBallType == "Toro" then
+            parryRadiusToUse = TORO_BALL_FIXED_PARRY_RADIUS
+        else 
+            parryRadiusToUse = BASE_PARRY_RADIUS
+            if ballSpeed >= MIN_SPEED_FOR_RADIUS_INCREASE then
+                local radiusIncrease = (ballSpeed * currentRadiusIncreasePerSpeed)
+                parryRadiusToUse = parryRadiusToUse + radiusIncrease
+                parryRadiusToUse = math.min(parryRadiusToUse, MAX_PARRY_RADIUS)
+            end
+        end
+    
+        local isMakingSharpCurve = false
+        if ENABLE_CURVE_DETECTION and ballSpeed > MIN_SPEED_FOR_CURVE_DETECTION and lastBallMovementVector.Magnitude > 0 then
+            local currentBallDirectionUnit = ballMovementVector.Unit
+            local lastBallDirectionUnit = lastBallMovementVector.Unit
+            if currentBallDirectionUnit.Magnitude > 0.99 and lastBallDirectionUnit.Magnitude > 0.99 then
+                local dotProduct = currentBallDirectionUnit:Dot(lastBallDirectionUnit)
+                local angle = math.deg(math.acos(math.clamp(dotProduct, -1, 1)))
+                isMakingSharpCurve = (angle > CURVE_ANGLE_THRESHOLD)
+            end
+        end
+        lastBallMovementVector = ballMovementVector
+        lastBallSpeed = ballSpeed
+        UpdateOrCreateVisualizer(humanoidRootPart, parryRadiusToUse)
+    
+        local currentTime = os.clock()
+        if currentTime - lastParryTime < PARRY_COOLDOWN then return end
+    
+        local shouldPerformParry = false
+
+        if trackedBallType == "Normal" then
+            if isThreat then
+                if distance <= parryRadiusToUse and not isMakingSharpCurve then
+                    local directionCheckPassed = true
+                    if ENABLE_DIRECTION_FILTER then
+                        local vectorToPlayer = (humanoidRootPart.Position - ballPos).Unit
+                        local ballDirectionUnit = ballMovementVector.Unit
+                        if ballMovementVector.Magnitude > 0.01 and ballDirectionUnit.Magnitude > 0.99 then
+                            local directionDot = ballDirectionUnit:Dot(vectorToPlayer)
+                            directionCheckPassed = (directionDot > DIRECTION_DOT_THRESHOLD)
+                        else
+                            directionCheckPassed = false 
+                        end
+                    end
+                    local predictionCheckPassed = true
+                    if directionCheckPassed and ENABLE_PREDICTION_FILTER and ballMovementVector.Magnitude > 0.01 then
+                        local predictedBallPos = ballPos + (ballMovementVector * PREDICTION_FRAMES)
+                        local predictedDistance = (humanoidRootPart.Position - predictedBallPos).Magnitude
+                        predictionCheckPassed = (predictedDistance <= distance + PREDICTION_TOLERANCE)
+                    end
+                    if directionCheckPassed and predictionCheckPassed then
+                        shouldPerformParry = true
+                    end
+                end
+
+                -- Condições de Clash Spam para "Ball" (requer isThreat)
+                if not shouldPerformParry and (distance <= CLASH_SPAM_RADIUS and not isMakingSharpCurve) then
+                    shouldPerformParry = true
+                end
+            end
+        elseif trackedBallType == "Toro" then
+            local toroVeryCloseRadius = math.min(CLASH_SPAM_RADIUS, TORO_BALL_FIXED_PARRY_RADIUS * 0.5)
+
+            if distance <= toroVeryCloseRadius then
+                 -- Quando MUITO perto, vamos ser bem permissivos com a direção,
+                 -- apenas para garantir que não estamos dando parry numa bola que está claramente indo embora.
+                local directionCheckPassedForVeryClose = true
+                if ENABLE_DIRECTION_FILTER then -- Ainda pode usar o filtro de direção, mas talvez com um threshold menor
+                    local vectorToPlayer = (humanoidRootPart.Position - ballPos).Unit
+                    local ballDirectionUnit = ballMovementVector.Unit
+                    if ballMovementVector.Magnitude > 0.01 and ballDirectionUnit.Magnitude > 0.99 then
+                        local directionDot = ballDirectionUnit:Dot(vectorToPlayer)
+                        directionCheckPassedForVeryClose = (directionDot > (DIRECTION_DOT_THRESHOLD * 0.5)) -- Ex: threshold de direção mais baixo (0.35)
+                    else
+                        directionCheckPassedForVeryClose = false
+                    end
+                end
+                if directionCheckPassedForVeryClose then
+                    if DEBUG_SPEED_INFO then print("ToroBall VERY CLOSE parry condition!") end
+                    shouldPerformParry = true
+                end
+            
+            elseif not shouldPerformParry and distance <= parryRadiusToUse then
+                local directionCheckPassed = true
+                if ENABLE_DIRECTION_FILTER then
+                    local vectorToPlayer = (humanoidRootPart.Position - ballPos).Unit
+                    local ballDirectionUnit = ballMovementVector.Unit
+                    if ballMovementVector.Magnitude > 0.01 and ballDirectionUnit.Magnitude > 0.99 then
+                        local directionDot = ballDirectionUnit:Dot(vectorToPlayer)
+                        directionCheckPassed = (directionDot > DIRECTION_DOT_THRESHOLD)
+                    else
+                        directionCheckPassed = false 
+                    end
+                end
+                
+                -- Filtro de predição
+                local predictionCheckPassed = true
+                if directionCheckPassed and ENABLE_PREDICTION_FILTER and ballMovementVector.Magnitude > 0.01 then
+                    local predictedBallPos = ballPos + (ballMovementVector * PREDICTION_FRAMES)
+                    local predictedDistance = (humanoidRootPart.Position - predictedBallPos).Magnitude
+                    predictionCheckPassed = (predictedDistance <= distance + PREDICTION_TOLERANCE) 
+                end
+
+                if directionCheckPassed and predictionCheckPassed then
+                    shouldPerformParry = true
+                end
+            end
+        end
+
+        if shouldPerformParry then
+            PerformParryAction()
+            lastParryTime = currentTime
+        end
+    end
+
+    Tab:AddParagraph({
+        Title = Translations.t("mainParagraph") .. player.Name,
+        Content = Translations.t("mainParagraphContent") .. tostring(_G.LICENSE_EXPIRATION or "N/A"),
+    })
+
+    _G.AutoParryToggle = Tab:AddToggle("AutoParry", {
+        Title = Translations.t("autoParryTitle"),
+        Default = true,
+        Callback = function(Value)
+            scriptEnabled = Value
+            if scriptEnabled then
+                if not heartbeatConnection or not heartbeatConnection.Connected then
+                    ball = nil
+                    trackedBallType = nil
+                    previousBallPosition = nil
+                    heartbeatConnection = RunService.Heartbeat:Connect(AutoParryLoop)
+                end
+            else
+                if heartbeatConnection and heartbeatConnection.Connected then
+                    heartbeatConnection:Disconnect()
+                end
+                heartbeatConnection = nil
+                DestroyVisualizer()
+                ball = nil
+                trackedBallType = nil
+                previousBallPosition = nil
+            end
+        end
+    })
+    
+    Tab:AddSlider("PingComp", {
+        Title = Translations.t("pingCompTitle"),
+        Description = Translations.t("pingCompDesc"),
+        Default = 0.08,
+        Min = 0.01,
+        Max = 0.2,
+        Rounding = 3,
+        Callback = function(value)
+            currentRadiusIncreasePerSpeed = value
+        end
+    })
+
+    local pingBased = true
+
+    -- Função para pegar ping do player via PingLabel
+    local function getPing()
+        local success, pingText = pcall(function()
+            local label = player.PlayerGui:WaitForChild("HUD")
+                            :WaitForChild("HolderLeftBottom")
+                            :WaitForChild("ServerStatistics")
+                            :WaitForChild("PingLabel")
+            return label.Text
+        end)
+    
+        if success and pingText then
+            local pingNumber = tonumber(pingText:match("(%d+)"))
+            return pingNumber or 0
+        end
+    
+        return 0
+    end
+
+    Tab:AddToggle("PingBased", {
+        Title = Translations.t("pingBasedTitle"),
+        Default = true,
+        Callback = function(value)
+            pingBased = value
+            if pingBased then
+                local ping = getPing()
+                currentRadiusIncreasePerSpeed = ping / 1000
+            end
+        end
+    })
+
+    -- Loop leve para atualizar automaticamente
+    spawn(function()
+        while true do
+            if pingBased then
+                local ping = getPing()
+                currentRadiusIncreasePerSpeed = ping / 1000
+            end
+            wait(0.1)
+        end
+    end)
+
+    -- Detecta se é celular ou PC
+    local isMobile = GuiService:IsTenFootInterface() or UserInputService.TouchEnabled
+
+    -- Obter caminhos corretos para GUI dependendo da plataforma
+
+    local deflectButton, toolbarButtons
+
+if isMobile then
+    pcall(function()
+        local gui = player:FindFirstChild("PlayerGui") and player.PlayerGui:FindFirstChild("MobileButtonsGUI")
+        local holder = gui and gui:FindFirstChild("MobileButtonHolder")
+        deflectButton = holder and holder:FindFirstChild("DeflectButton")
+        toolbarButtons = holder
+    end)
+else
+    pcall(function()
+        local gui = player:FindFirstChild("PlayerGui") and player.PlayerGui:FindFirstChild("HUD")
+        local holder = gui and gui:FindFirstChild("HolderBottom")
+        local toolbar = holder and holder:FindFirstChild("ToolbarButtons")
+        deflectButton = toolbar and toolbar:FindFirstChild("DeflectButton")
+        toolbarButtons = toolbar
+    end)
+end
+
+
+
+    local lastTransparency
+    if deflectButton then
+        lastTransparency = deflectButton.BackgroundTransparency
+    end
+    local timerRunning = false
+    local startTime = 0
+    local printed90 = false
+
+    local allowedAbilities = {
+        -- Gazo
+        ["FAKE BALL"] = true, ["ASTRAL PORTAL"] = true, ["CURSED BLUE"] = true,
+        -- Lufus
+        ["EXTEND-O ARM"] = true, ["GLASS WALL"] = true,
+        -- Saito
+        ["UPPER CUT"] = true, ["SONIC SLIDE"] = true, ["GROUND WALLS"] = true,
+        -- Keilo
+        ["ZAP FREEZE"] = true, ["ZAP DEFLECT"] = true, ["GOD SPEED"] = true,
+        ["ASSASSIN INVISIBILITY"] = true, ["LIGHTNING INTERCEPT"] = true,
+        -- Senshu
+        ["CHARGED KICK"] = true, ["JUGGLING BLAST"] = true,
+        -- Koju
+        ["LEAP STRIKE"] = true, ["CHAIN SPEAR"] = true, ["HANDGUN"] = true,
+        -- Kameki
+        ["DRAGON RUSH"] = true, ["INSTANT TRAVEL"] = true, ["KI BLAST"] = true,
+        -- Torokai
+        ["ICE SLIDE"] = true, ["ICE SHIELD"] = true, ["FIRE DASH"] = true, ["FIRE BALL"] = true,
+        -- JIRO
+        ["BONK"] = true, ["SIDE STEP"] = true, ["BUNGEE"] = true,
+        -- Gloom
+        ["SHADOW RAMPAGE"] = true, ["DREAD SPHERE"] = true, ["PHANTOM GASP"] = true,
+        -- Denjin
+        ["ORBITAL CANNON"] = true,
+        -- Wu
+        ["RULERS HOLD"] = true, ["DAGGER DASH"] = true
+    }
+
+    local function isOnCooldown(button)
+        return button.BackgroundColor3 == Color3.new(0, 0, 0)
+    end
+
+    local function clickButton(button)
+        local pos = button.AbsolutePosition
+        local size = button.AbsoluteSize
+        local inset = GuiService:GetGuiInset()
+
+        -- centro base
+        local centerX = pos.X + size.X / 2
+        local centerY = pos.Y + size.Y / 2 + inset.Y
+
+        -- Click down + up
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
+    end
+
+    local function pressAbilityButton(button)
+        if not button then return end
+        local keyLabel = button:FindFirstChild("KeyCodeLabel")
+        if not keyLabel then return end
+
+        local keyText = keyLabel.Text
+        local keyCode
+
+        if keyText == "1" then keyCode = Enum.KeyCode.One end
+        if keyText == "2" then keyCode = Enum.KeyCode.Two end
+        if keyText == "3" then keyCode = Enum.KeyCode.Three end
+        if keyText == "4" then keyCode = Enum.KeyCode.Four end
+
+        if keyCode then
+            VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+            task.wait(0.05)
+            VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
+        end
+    end
+
+    local function isHighlightValid()
+        local highlight = character:FindFirstChild("Highlight")
+        if highlight and highlight:IsA("Highlight") then
+            return math.abs(highlight.FillTransparency - 0.34) <= 0.001
+        end
+        return false
+    end
+
+    -- LOOP PRINCIPAL
+    task.spawn(function()
+        while true do
+            if autoAbilityEnabled then
+                local currentTransparency
+                if deflectButton then
+                    currentTransparency = deflectButton.BackgroundTransparency
+                end
+                local now = tick()
+
+                if currentTransparency ~= lastTransparency then
+                    if not timerRunning then
+                        startTime = now
+                        timerRunning = true
+                        printed90 = false
+                    else
+                        timerRunning = false
+                    end
+                    lastTransparency = currentTransparency
+                end
+
+                if timerRunning and not printed90 then
+                    local elapsed = now - startTime
+                    if elapsed >= 0.8 then
+                        if isHighlightValid() then
+                            for i = 1, 4 do
+                                local button = toolbarButtons:FindFirstChild("AbilityButton" .. i)
+                                if button then
+                                    local nameLabel = button:FindFirstChild("AbilityNameLabel")
+                                    if nameLabel then
+                                        local abilityName = nameLabel.Text
+                                        if allowedAbilities[abilityName] and not isOnCooldown(button) then
+                                            if isMobile then
+                                                pressAbilityButton(button)
+                                            else
+                                                clickButton(button)
+                                            end
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        printed90 = true
+                    end
+                end
+            end
+            task.wait(0.05)
+        end
+    end)
+
+    _G.AutoAbilityToggle = Tab:AddToggle("autoability", {
+        Title = Translations.t("autoAbilityTitle"),
+        Default = true,
+        Callback = function(Value)
+            autoAbilityEnabled = Value
+        end
+    })
+
+    local character = player.Character or player.CharacterAdded:Wait()
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local remote
+pcall(function()
+    remote = game:GetService("ReplicatedStorage"):FindFirstChild("ReplicateCamLook")
+end)
+local autocurveDirection = Translations.t("autoCurveOff")
+
+local hookEnabled = false
+local old; old = hookmetamethod(game, "__namecall", function(self, ...)
+    if self == remote and getnamecallmethod() == "FireServer" then
+        if hookEnabled then
+            if checkcaller() then
+                return old(self, ...)
+            else
+                return nil
+            end
+        end
+    end
+    return old(self, ...)
+end)
+
+local Dropdown = Tab:AddDropdown("autocurve", {
+    Title = Translations.t("autoCurveTitle"),
+    Values = {
+        Translations.t("autoCurveOff"),
+        Translations.t("autoCurveBehind"),
+        Translations.t("autoCurveRight"),
+        Translations.t("autoCurveLeft"),
+        Translations.t("autoCurveUP"),
+        Translations.t("autoCurveRandom")
+    },
+    Multi = false,
+    Default = 1,
+})
+
+Dropdown:SetValue(Translations.t("autoCurveOff"))
+Dropdown:OnChanged(function(Value)
+    autocurveDirection = Value
+    -- Ativa ou desativa o hook dependendo da opção
+    hookEnabled = (autocurveDirection ~= Translations.t("autoCurveOff"))
+end)
+
+-- Função que calcula o vetor modificado
+local function getCurveVector(direction)
+    local lookVector = rootPart.CFrame.LookVector
+    local x, y, z = lookVector.X, lookVector.Y, lookVector.Z
+
+    if direction == Translations.t("autoCurveBehind") then
+        x, y, z = -x, -y, -z
+    elseif direction == Translations.t("autoCurveRight") then
+        x, z = -z, x
+    elseif direction == Translations.t("autoCurveLeft") then
+        x, z = z, -x
+    elseif direction == Translations.t("autoCurveUP") then
+        y = y + 1
+    elseif direction == Translations.t("autoCurveRandom") then
+        local ang = math.rad(math.random(-180, 180))
+        local cos, sin = math.cos(ang), math.sin(ang)
+        x, z = x * cos - z * sin, x * sin + z * cos
+    end
+
+    return x, y, z
+end
+
+-- Loop contínuo pra mandar o remote
+RunService.RenderStepped:Connect(function()
+    if autocurveDirection ~= Translations.t("autoCurveOff") then
+        local x, y, z = getCurveVector(autocurveDirection)
+        local id = tick()
+        remote:FireServer(x, y, z, id)
+    end
+end)
+
+
+
+
+    -- ---------- Configs ----------
+    local function getDefaultColor()
+        local ok, result = pcall(function()
+            return LocalPlayer.PlayerGui.PAGES.SettingsPage.ScrollingFrame["Settings_Targeting Color"].Frame.MultiButton.StatusLabel.TextColor3
+        end)
+        if ok and result then return result end
+        return Color3.new(1,1,1)
+    end
+
+    local defaultColor = getDefaultColor()
+
+    -- Cor padrão real do Trail
+    local defaultTrailColor = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.new(0,1,1)),
+        ColorSequenceKeypoint.new(1, Color3.new(1,1,1))
+    })
+
+    -- ---------- ColorPicker ----------
+    local TargetColor = Tab:AddColorpicker("TargetColor", {
+        Title = Translations.t("targetColor"),
+        Default = defaultColor
+    })
+
+    -- ---------- Helpers ----------
+    local connectedHighlights = {}
+    local function getPlayerFromAncestor(instance)
+        local cur = instance
+        while cur and cur ~= workspace do
+            local pl = Players:GetPlayerFromCharacter(cur)
+            if pl then return pl end
+            cur = cur.Parent
+        end
+        return nil
+    end
+
+    local function isHighlightForPlayer(hl)
+        return getPlayerFromAncestor(hl.Parent) ~= nil
+    end
+
+    -- ---------- Highlights ----------
+    local function monitorHighlight(hl)
+        if not hl or connectedHighlights[hl] then return end
+        if not isHighlightForPlayer(hl) then return end
+        connectedHighlights[hl] = true
+
+        if hl.FillColor == defaultColor then
+            hl.FillColor = TargetColor.Value
+        end
+
+        hl:GetPropertyChangedSignal("FillColor"):Connect(function()
+            if hl.FillColor == defaultColor then
+                hl.FillColor = TargetColor.Value
+            end
+        end)
+    end
+
+    for _, desc in ipairs(workspace:GetDescendants()) do
+        if desc:IsA("Highlight") and isHighlightForPlayer(desc) then
+            task.spawn(function() monitorHighlight(desc) end)
+        end
+    end
+
+    workspace.DescendantAdded:Connect(function(desc)
+        if desc:IsA("Highlight") and isHighlightForPlayer(desc) then
+            task.delay(0.05,function() monitorHighlight(desc) end)
+        end
+    end)
+
+    -- ---------- Part Highlight (Bola) ----------
+    local function handlePartHighlight(hl)
+        if not hl then return end
+        local function tryApply()
+            if hl.FillColor == defaultColor and hl.OutlineColor == defaultColor then
+                hl.FillColor = TargetColor.Value
+                hl.OutlineColor = TargetColor.Value
+            end
+        end
+        tryApply()
+        hl:GetPropertyChangedSignal("FillColor"):Connect(function()
+            if hl.FillColor == defaultColor then tryApply() end
+        end)
+        hl:GetPropertyChangedSignal("OutlineColor"):Connect(function()
+            if hl.OutlineColor == defaultColor then tryApply() end
+        end)
+    end
+
+    local function monitorPartHighlight(part)
+        if part:FindFirstChild("Highlight") then
+            handlePartHighlight(part.Highlight)
+        end
+    end
+
+    if workspace:FindFirstChild("Part") then
+        monitorPartHighlight(workspace.Part)
+    end
+
+    workspace.ChildAdded:Connect(function(c)
+        if c.Name == "Part" then
+            task.delay(0.1,function()
+                monitorPartHighlight(c)
+            end)
+        end
+    end)
+
+    -- ---------- Trail ----------
+    local function isFillTransparency034(value)
+        return math.abs(value - 0.34) < 0.001
+    end
+
+    local function applyTrailColor(trail, color3)
+        if not trail then return end
+        local h,s,v = Color3.toHSV(color3)
+        trail.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromHSV(h,s,v)),
+            ColorSequenceKeypoint.new(1, Color3.fromHSV(h,s,v))
+        })
+    end
+
+    local function findLocalHighlight()
+    -- Tenta achar qualquer Highlight ligado ao LocalPlayer
+    for _, desc in ipairs(workspace:GetDescendants()) do
+        if desc:IsA("Highlight") and desc.Parent and desc.Parent.Name == LocalPlayer.Name then
+            return desc
+        end
+    end
+    return nil
+end
+
+    local function updateTrail(trail)
+    if not trail then return end
+    local hl = findLocalHighlight()
+    if not hl then return end
+
+    -- tolerância maior (0.01) para aceitar pequenas diferenças de tween
+    if math.abs(hl.FillTransparency - 0.34) < 0.01 then
+        local h,s,v = Color3.toHSV(TargetColor.Value)
+        trail.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromHSV(h,s,v)),
+            ColorSequenceKeypoint.new(1, Color3.fromHSV(h,s,v))
+        })
+    end
+end
+
+    local function monitorTrail(trail)
+        if not trail then return end
+
+        -- Atualiza baseado no FillTransparency do seu Highlight
+        local char = workspace:FindFirstChild(LocalPlayer.Name)
+        if char and char:FindFirstChild("Highlight") then
+            local hl = char.Highlight
+            hl:GetPropertyChangedSignal("FillTransparency"):Connect(function()
+                updateTrail(trail)
+            end)
+        end
+        trail:GetPropertyChangedSignal("Color"):Connect(function()
+            updateTrail(trail)
+        end)
+    end
+
+    local function monitorPartForTrail(part)
+        if not part then return end
+        if part:FindFirstChild("Trail") then
+            monitorTrail(part.Trail)
+        end
+        part.ChildAdded:Connect(function(c)
+            if c:IsA("Trail") then
+                task.delay(0.05,function()
+                    monitorTrail(c)
+                end)
+            end
+        end)
+    end
+
+    if workspace:FindFirstChild("Part") then
+        monitorPartForTrail(workspace.Part)
+    end
+    workspace.ChildAdded:Connect(function(c)
+        if c.Name == "Part" then
+            task.delay(0.1,function()
+                monitorPartForTrail(c)
+            end)
+        end
+    end)
+
+    -- ---------- ColorPicker change ----------
+    TargetColor:OnChanged(function(value)
+        -- Atualiza Highlights
+        for _, desc in ipairs(workspace:GetDescendants()) do
+            if desc:IsA("Highlight") and isHighlightForPlayer(desc) then
+                if desc.FillColor == defaultColor then
+                    desc.FillColor = value
+                end
+            end
+        end
+
+        -- Atualiza Part Highlight
+        local part = workspace:FindFirstChild("Part")
+        if part and part:FindFirstChild("Highlight") then
+            local hl = part.Highlight
+            if hl.FillColor == defaultColor and hl.OutlineColor == defaultColor then
+                hl.FillColor = value
+                hl.OutlineColor = value
+            end
+        end
+
+        -- Atualiza Trail baseado no FillTransparency do seu Highlight
+        if part and part:FindFirstChild("Trail") then
+            updateTrail(part.Trail)
+        end
+    end)
+
+    -- Função para aplicar cor somente se não for branco
+    local function applyArrowColorIfNotWhite(image, color)
+        if image and image:IsA("ImageLabel") then
+            local c = image.ImageColor3
+            -- Verifica se não é branco
+            if not (c.R == 1 and c.G == 1 and c.B == 1) then
+                image.ImageColor3 = color
+            end
+        end
+    end
+
+    -- Função para pegar o ArrowImage atual (mesmo que seja recriado)
+    local function getArrowImage()
+        local marker = LocalPlayer.PlayerGui:FindFirstChild("MarkerHUD")
+        if not marker then return nil end
+        local mainFrame = marker:FindFirstChild("MainFrame")
+        if not mainFrame then return nil end
+        local arrowFrame = mainFrame:FindFirstChild("ArrowFrame")
+        if not arrowFrame then return nil end
+        return arrowFrame:FindFirstChild("ArrowImage")
+    end
+
+    -- Força a cor a cada frame, mas só se não for branco
+    RunService.RenderStepped:Connect(function()
+        local arrowImage = getArrowImage()
+        if arrowImage then
+            applyArrowColorIfNotWhite(arrowImage, TargetColor.Value)
+        end
+    end)
+
+    -- Monitora recriação do MarkerHUD
+    LocalPlayer.PlayerGui.ChildAdded:Connect(function(child)
+        if child.Name == "MarkerHUD" then
+            task.wait(0.1)
+            local arrowImage = getArrowImage()
+            if arrowImage then
+                applyArrowColorIfNotWhite(arrowImage, TargetColor.Value)
+            end
+        end
+    end)
+
+    -- Atualiza a cor quando o Colorpicker muda, mas só se não for branco
+    TargetColor:OnChanged(function(value)
+        local arrowImage = getArrowImage()
+        if arrowImage then
+            applyArrowColorIfNotWhite(arrowImage, value)
+        end
+    end)
+
+    Tab:AddToggle("AutoReady", {
+        Title = Translations.t("autoReadyTitle"),
+        Default = false,
+        Callback = function(Value)
+            local player = game.Players.LocalPlayer
+            local destino = Vector3.new(568.33056640625, 292.850830078125, -772.3955688476562)
+    
+            getgenv().autoReadyData = getgenv().autoReadyData or {
+                ativo = false,
+                andando = false,
+                connectionStatus = nil,
+                connectionChar = nil
+            }
+
+            local data = getgenv().autoReadyData
+    
+            local function mover()
+                if data.andando then return end
+                data.andando = true
+                task.spawn(function()
+                    while data.ativo do
+                        local char = player.Character
+                        local hum = char and char:FindFirstChild("Humanoid")
+                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                        if hum and hrp and not player:GetAttribute("IsInGame") and (hrp.Position - destino).Magnitude > 5 then
+                            hum:MoveTo(destino)
+                        end
+                        task.wait(0.01)
+                    end
+                    data.andando = false
+                end)
+            end
+    
+            if Value then
+                data.ativo = true
+                mover()
+                if data.connectionStatus then data.connectionStatus:Disconnect() end
+                data.connectionStatus = player:GetAttributeChangedSignal("IsInGame"):Connect(function()
+                    if not player:GetAttribute("IsInGame") and data.ativo then mover() end
+                end)
+                if data.connectionChar then data.connectionChar:Disconnect() end
+                data.connectionChar = player.CharacterAdded:Connect(function(char)
+                    if data.ativo and not player:GetAttribute("IsInGame") then
+                        char:WaitForChild("Humanoid")
+                        mover()
+                    end
+                end)
+            else
+                data.ativo = false
+                if data.connectionStatus then data.connectionStatus:Disconnect() end
+                if data.connectionChar then data.connectionChar:Disconnect() end
+                local char = player.Character
+                local hum = char and char:FindFirstChild("Humanoid")
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hum and hrp then hum:MoveTo(hrp.Position) end
+            end
+        end
+    })    
+
+    local readyZone
+    pcall(function()
+    -- tenta encontrar sem quebrar o script
+    local lobby = Workspace:FindFirstChild("Lobby")
+    if lobby then
+        local readyArea = lobby:FindFirstChild("ReadyArea")
+        if readyArea then
+            readyZone = readyArea:FindFirstChild("ReadyZone")
+        end
+    end
+end)
+    local originalSize = readyZone and readyZone.Size
+
+    Tab:AddToggle("AlwaysReady", {
+        Title = Translations.t("alwaysReady"),
+        Default = false,
+        Callback = function(state)
+            if readyZone and readyZone:IsA("BasePart") then
+                if state then
+                    readyZone.Size = Vector3.new(1000, 1000, 1000)
+                else
+                    readyZone.Size = originalSize -- retorna ao tamanho original
+                end
+            end
+        end
+    })
+
+    local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- CONFIG
+local MAX_DISTANCE = 5000
+local TEXT_SIZE = 24
+local TEXT_OFFSET = Vector3.new(0, 2.5, 0)
+
+-- LOBBY
+local LobbyBuild
+pcall(function()
+    local lobby = Workspace:FindFirstChild("Lobby")
+    if lobby then
+        local build1 = lobby:FindFirstChild("Build")
+        if build1 then
+            LobbyBuild = build1:FindFirstChild("Build")
+        end
+    end
+end)
+
+-- CONTROLE
+local ESPEnabled = false
+local ESPConnections = {}
+local ESPBillboards = {}
+
+-- Limpar ESPs
+local function clearESP()
+    for _, bb in pairs(ESPBillboards) do
+        if bb and bb.Parent then
+            bb:Destroy()
+        end
+    end
+    ESPBillboards = {}
+
+    for _, con in pairs(ESPConnections) do
+        if con then con:Disconnect() end
+    end
+    ESPConnections = {}
+end
+
+-- Traduz cores em corações
+local function getHeartsByColor(r, g, b)
+    if r == 38 and g == 255 and b == 0 then
+        return "♥♥♥", Color3.fromRGB(0, 255, 0)
+    elseif r == 183 and g == 250 and b == 0 then
+        return "♥♥", Color3.fromRGB(183, 250, 0)
+    elseif r == 255 and g == 165 and b == 1 then
+        return "♥", Color3.fromRGB(255, 165, 0)
+    elseif r == 255 and g == 0 and b == 4 then
+        return "☠", Color3.fromRGB(255, 0, 0)
+    else
+        return "", Color3.fromRGB(255, 255, 255)
+    end
+end
+
+-- Verifica se HRP está dentro do Lobby
+local function isInsideLobby(hrp)
+    if not hrp or not LobbyBuild then return false end
+    local pos = hrp.Position
+
+    for _, part in pairs(LobbyBuild:GetDescendants()) do
+        if part:IsA("BasePart") then
+            local size = part.Size / 2
+            local cf = part.CFrame
+            if pos.X >= (cf.Position.X - size.X) and pos.X <= (cf.Position.X + size.X) and
+               pos.Y >= (cf.Position.Y - size.Y) and pos.Y <= (cf.Position.Y + size.Y) and
+               pos.Z >= (cf.Position.Z - size.Z) and pos.Z <= (cf.Position.Z + size.Z) then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local function createESP(player)
+    if not ESPEnabled then return end
+    if not player.Character then return end
+
+    local head = player.Character:FindFirstChild("Head")
+    if not head then return end
+
+    local old = head:FindFirstChild("HealthTag_"..player.Name)
+    if old then old:Destroy() end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "HealthTag_"..player.Name
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(4, 0, 2, 0)
+    billboard.StudsOffset = TEXT_OFFSET
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = MAX_DISTANCE
+    billboard.Enabled = false -- começa desativado
+    billboard.Parent = head
+    table.insert(ESPBillboards, billboard)
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1,0,1,0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = ""
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.TextSize = TEXT_SIZE
+    textLabel.TextColor3 = Color3.new(1,1,1)
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.TextStrokeColor3 = Color3.new(0,0,0)
+    textLabel.Parent = billboard
+
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if not ESPEnabled then
+            billboard.Enabled = false
+            return
+        end
+
+        if not LocalPlayer:GetAttribute("IsInGame") then
+            billboard.Enabled = false
+            return
+        end
+
+        if not player.Character or not head:IsDescendantOf(workspace) then
+            billboard:Destroy()
+            if connection then connection:Disconnect() end
+            return
+        end
+
+        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+        if hrp and isInsideLobby(hrp) then
+            -- player dentro do Lobby → desliga ESP
+            billboard.Enabled = false
+            return
+        end
+
+        -- só mostra se estiver fora do Lobby
+        local billboardPath = head:FindFirstChild("PlayerBillboard")
+        local bar = billboardPath and billboardPath:FindFirstChild("Bar")
+        local inner = bar and bar:FindFirstChild("Inner")
+        if not inner then
+            billboard.Enabled = false
+            return
+        end
+
+        local color = inner.BackgroundColor3
+        local r,g,b = math.round(color.R*255), math.round(color.G*255), math.round(color.B*255)
+        local hearts, textColor = getHeartsByColor(r,g,b)
+
+        if hearts ~= "" then
+            billboard.Enabled = true
+            textLabel.Text = hearts
+            textLabel.TextColor3 = textColor
+        else
+            billboard.Enabled = false
+        end
+    end)
+
+    table.insert(ESPConnections, connection)
+
+    player.CharacterAdded:Connect(function()
+        task.wait(1)
+        createESP(player)
+    end)
+end
+
+
+-- Configura players existentes + novos
+local function setupAllPlayers()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            if plr.Character then
+                createESP(plr)
+            end
+            plr.CharacterAdded:Connect(function()
+                task.wait(1)
+                createESP(plr)
+            end)
+        end
+    end
+
+    Players.PlayerAdded:Connect(function(plr)
+        if plr ~= LocalPlayer then
+            plr.CharacterAdded:Connect(function()
+                task.wait(1)
+                createESP(plr)
+            end)
+            if plr.Character then
+                createESP(plr)
+            end
+        end
+    end)
+
+    Players.PlayerRemoving:Connect(function(plr)
+        if plr.Character and plr.Character:FindFirstChild("Head") then
+            local head = plr.Character.Head
+            local tag = head:FindFirstChild("HealthTag_"..plr.Name)
+            if tag then tag:Destroy() end
+        end
+    end)
+end
+
+-- Ativa/Desativa
+local function toggleESP(value)
+    ESPEnabled = value
+    if ESPEnabled then
+        setupAllPlayers()
+    else
+        clearESP()
+    end
+end
+
+-- Exemplo de toggle na Tab
+Tab:AddToggle("ESPLife", {
+    Title = "ESP Life",
+    Default = false,
+    Callback = function(value)
+        toggleESP(value)
+    end
+})
+
+
+        local camera = workspace.CurrentCamera
+        local fovInicialPadrao = camera and math.clamp(camera.FieldOfView, 70, 120) or 70
+        local fov = fovInicialPadrao
+
+        Tab:AddSlider("Fov", {
+            Title = "FOV",
+            Default = fovInicialPadrao,
+            Min = 70,
+            Max = 120,
+            Rounding = 0,
+            Callback = function(Value)
+                fov = Value
+            end
+        })
+
+        spawn(function()
+            while true do
+                task.wait(0.005)
+                if camera then
+                    camera.FieldOfView = fov
+                end
+            end
+        end)
+    
+        Tab:AddSlider("MaxZoom", {
+            Title = Translations.t("maxZoom"),
+            Default = 45,
+            Min = 45,
+            Max = 200,
+            Rounding = 0,
+            Callback = function(Value)
+                local currentPlayer = Players.LocalPlayer
+                if currentPlayer then 
+                    currentPlayer.CameraMaxZoomDistance = Value 
+                end
+            end
+        })
+
+    end
+
+end
