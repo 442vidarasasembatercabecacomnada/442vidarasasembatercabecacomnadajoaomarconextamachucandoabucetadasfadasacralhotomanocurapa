@@ -1,1 +1,834 @@
-print("acpi_patch_data.cpython-313.pyc")
+-- Translations Module
+local Translations = {}
+
+-- Lista de traduções
+Translations.data = {
+
+    ["pt-br"] = { -- Português
+        -- loader
+        scritpNotSupported = "Nenhum script configurado para este jogo.",
+
+        -- death ball
+        windowTitle = "MOON rodando em ",
+
+        mainParagraph = "Olá, ",
+        mainParagraphContent = "Licença válida até: ",
+
+        autoParryTitle = "Deflexão automática",
+
+        pingCompTitle = "Compensador de ping",
+        pingCompDesc = "Ajuste de acordo com seu ms.",
+
+        pingBasedTitle = "Baseado no ping",
+
+        autoAbilityTitle = "Habilidade automática",
+
+        autoCurveTitle = "Curva automática",
+        autoCurveOff = "Desligado",
+        autoCurveBehind = "Atrás",
+        autoCurveRight = "Direita",
+        autoCurveLeft = "Esquerda",
+        autoCurveUP = "Cima",
+        autoCurveRandom = "Aleatório",
+
+        targetColor = "Cor do alvo",
+
+        autoReadyTitle = "Pronto automático",
+        alwaysReady = "Sempre pronto",
+
+        maxZoom = "Zoom máximo",
+
+        farmHeightTitle = "Altura",
+        reviveAll = "Reviver todos",
+
+        NoneOptions = "Nenhum",
+
+        sectionSwords = "Espadas",
+        swordSelect = "Selecionar espada",
+
+        selectAura = "Selecionar aura",
+
+        selectPose = "Selecionar pose",
+        sectionPoses = "Poses",
+
+        selectSkybox = "Selecionar Skybox",
+
+        warningTitle = "Aviso",
+        warningMessage = "Essas funções apresentam alto risco de banimento.",
+        exploitSupported = "Seu exploit não é suportado.",
+
+        infiniteParryTitle = "Parry infinito",
+
+        infiniteDashTitle = "Dash infinito",
+        noDashCooldownTitle = "Sem cooldown de dash",
+        dashPoweTitle = "Poder do dash",
+
+        infiniteJumpTitle = "Pulo infinito",
+
+        mainTab = "Principal",
+        farmTab = "Farm",
+        visualsTab = "Visuais",
+        rageTab = "Rage",
+        bindsTab = "Binds",
+        settingsTab = "Configurações",
+
+        --Fluent
+        configurationSettings = "Configurações",
+        configName = "Nome da configuração",
+        configList = "Lista de configurações",
+        createConfig = "Criar configuração",
+        loadConfig = "Carregar configuração",
+        saveConfig = "Salvar configuração",
+        refreshList = "Atualizar lista",
+        setAutoLoad = "Definir como carregamento automático",
+        currentAutoload = "Configuração de autoload atual: ",
+        interface = "Interface",
+        configLoader = "Carregador de configuração",
+        failedToLoadAutoLoad = "Falha ao carregar configuração automática: ",
+        autoLoadedConfig = "Configuração %q carregada automaticamente",
+        invalidConfigName = "Nome de configuração inválido (vazio)",
+        failedToSaveConfig = "Falha ao salvar configuração: ",
+        createdConfig = "Configuração %q criada",
+        failedToLoadConfig = "Falha ao carregar configuração: ",
+        loadedConfig = "Configuração %q carregada",
+        failedToOverwrite = "Falha ao sobrescrever configuração: ",
+        overwriteConfig = "Substituir configuração",
+        overwroteConfig = "Configuração %q sobrescrita",
+        setToAutoLoad = "Configuração %q definida para autoload",
+        search = "Procurar...",
+        currentAutoLoadNone = "Configuração de carregamento automático atual: nenhum",
+
+
+        -- interface manager
+        InterfaceThemeTitle = "Tema",
+        InterfaceThemeDesc = "Altera o tema da interface.",
+
+        AcrylicTitle = "Acrílico",
+        AcrylicDesc = "O fundo desfocado requer qualidade gráfica 8+.",
+
+        TransparencyTitle = "Transparência",
+        TransparencyDesc = "Torna a interface transparente.",
+
+        MenuKeybindTitle = "Tecla de minimizar",
+    },
+
+    ["en-us"] = { -- Inglês
+        -- loader
+        scritpNotSupported = "No scripts configured for this game.",
+
+        -- death ball
+        windowTitle = "MOON running in ",
+
+        mainParagraph = "Hello, ",
+        mainParagraphContent = "License valid until: ",
+
+        autoParryTitle = "Auto parry",
+
+        pingCompTitle = "Ping compensator",
+        pingCompDesc = "Adjust according to your ms.",
+
+        pingBasedTitle = "Ping based",
+
+        autoAbilityTitle = "Auto ability",
+
+        autoCurveTitle = "Auto curve",
+        autoCurveOff = "Off",
+        autoCurveBehind = "Behind",
+        autoCurveRight = "Right",
+        autoCurveLeft = "Left",
+        autoCurveUP = "Up",
+        autoCurveRandom = "Random",
+
+        targetColor = "Target color",
+
+        autoReadyTitle = "Auto ready",
+        alwaysReady = "Always ready",
+
+        maxZoom = "Max zoom",
+
+        farmHeightTitle = "Height",
+        reviveAll = "Revive all",
+
+        NoneOptions = "None",
+
+        sectionSwords = "Swords",
+        swordSelect = "Select sword",
+
+        selectAura = "Select aura",
+
+        selectPose = "Select pose",
+        sectionPoses = "Poses",
+
+        selectSkybox = "Select Skybox",
+
+        warningTitle = "Warning",
+        warningMessage = "These features carry a high risk of ban.",
+        exploitSupported = "Your exploit is not supported.",
+
+        infiniteParryTitle = "Infinite parry",
+
+        infiniteDashTitle = "Infinite dash",
+        noDashCooldownTitle = "No dash cooldown",
+        dashPoweTitle = "Dash power",
+
+        infiniteJumpTitle = "Infinite jump",
+
+        mainTab = "Main",
+        farmTab = "Farm",
+        visualsTab = "Visuals",
+        rageTab = "Rage",
+        bindsTab = "Binds",
+        settingsTab = "Settings",
+
+        --Fluent
+        configurationSettings = "Configuration",
+        configName = "Config name",
+        configList = "Config list",
+        createConfig = "Create config",
+        loadConfig = "Load config",
+        saveConfig = "Save config",
+        refreshList = "Refresh list",
+        setAutoLoad = "Set as autoload",
+        currentAutoload = "Current autoload config: ",
+        interface = "Interface",
+        configLoader = "Config loader",
+        failedToLoadAutoLoad = "Failed to load autoload config: ",
+        autoLoadedConfig = "Auto loaded config %q",
+        invalidConfigName = "Invalid config name (empty)",
+        failedToSaveConfig = "Failed to save config: ",
+        createdConfig = "Created config %q",
+        failedToLoadConfig = "Failed to load config: ",
+        loadedConfig = "Loaded config %q",
+        failedToOverwrite = "Failed to overwrite config: ",
+        overwriteConfig = "Overwrite config",
+        overwroteConfig = "Overwrote config %q",
+        setToAutoLoad = "Set %q to auto load",
+        search = "Search...",
+        currentAutoLoadNone = "Current autoload config: none",
+
+        -- interface manager
+        InterfaceThemeTitle = "Theme",
+        InterfaceThemeDesc = "Changes the interface theme.",
+
+        AcrylicTitle = "Acrylic",
+        AcrylicDesc = "The blurred background requires graphic quality 8+.",
+
+        TransparencyTitle = "Transparency",
+        TransparencyDesc = "Makes the interface transparent.",
+
+        MenuKeybindTitle = "Minimize Bind",
+    },
+
+    ["es-es"] = { -- Espanhol
+        -- loader
+        scritpNotSupported = "No hay scripts configurados para este juego.",
+
+        -- death ball
+        windowTitle = "MOON ejecutándose en ",
+
+        mainParagraph = "Hola, ",
+        mainParagraphContent = "Licencia válida hasta: ",
+
+        autoParryTitle = "Desviación automática",
+
+        pingCompTitle = "Compensador de ping",
+        pingCompDesc = "Ajuste según su ms.",
+
+        pingBasedTitle = "Basado en ping",
+
+        autoAbilityTitle = "Habilidad automática",
+
+        autoCurveTitle = "Curva automática",
+        autoCurveOff = "Apagado",
+        autoCurveBehind = "Detrás",
+        autoCurveRight = "Derecha",
+        autoCurveLeft = "Izquierda",
+        autoCurveUP = "Arriba",
+        autoCurveRandom = "Aleatorio",
+
+        targetColor = "Color del objetivo",
+
+        autoReadyTitle = "Listo automático",
+        alwaysReady = "Siempre listo",
+
+        maxZoom = "Zoom máximo",
+
+        farmHeightTitle = "Altura",
+        reviveAll = "Revivir todos",
+
+        NoneOptions = "Ninguno",
+
+        sectionSwords = "Espadas",
+        swordSelect = "Seleccionar espada",
+
+        selectAura = "Seleccionar aura",
+
+        selectPose = "Seleccionar pose",
+        sectionPoses = "Poses",
+
+        selectSkybox = "Seleccionar Skybox",
+
+        warningTitle = "Advertencia",
+        warningMessage = "Estas funciones presentan un alto riesgo de baneo.",
+        exploitSupported = "Su exploit no es compatible.",
+
+        infiniteParryTitle = "Parry infinito",
+
+        infiniteDashTitle = "Dash infinito",
+        noDashCooldownTitle = "Sin cooldown de dash",
+        dashPoweTitle = "Poder del dash",
+
+        infiniteJumpTitle = "Salto infinito",
+
+        mainTab = "Principal",
+        farmTab = "Farm",
+        visualsTab = "Visuales",
+        rageTab = "Ira",
+        bindsTab = "Atajos",
+        settingsTab = "Configuración",
+
+        --Fluent
+        configurationSettings = "Configuración",
+        configName = "Nombre de la configuración",
+        configList = "Lista de configuraciones",
+        createConfig = "Crear configuración",
+        loadConfig = "Cargar configuración",
+        saveConfig = "Guardar configuración",
+        refreshList = "Actualizar lista",
+        setAutoLoad = "Establecer como carga automática",
+        currentAutoload = "Configuración de carga automática actual: ",
+        interface = "Interfaz",
+        configLoader = "Cargador de configuración",
+        failedToLoadAutoLoad = "Error al cargar configuración automática: ",
+        autoLoadedConfig = "Configuración %q cargada automáticamente",
+        invalidConfigName = "Nombre de configuración inválido (vacío)",
+        failedToSaveConfig = "Error al guardar configuración: ",
+        createdConfig = "Configuración %q creada",
+        failedToLoadConfig = "Error al cargar configuración: ",
+        loadedConfig = "Configuración %q cargada",
+        failedToOverwrite = "Error al sobrescribir configuración: ",
+        overwriteConfig = "Sobrescribir configuración",
+        overwroteConfig = "Configuración %q sobrescrita",
+        setToAutoLoad = "Configuración %q establecida para carga automática",
+        search = "Buscar...",
+        currentAutoLoadNone = "Configuración de carga automática actual: ninguna",
+
+
+        -- interface manager
+        InterfaceThemeTitle = "Tema",
+        InterfaceThemeDesc = "Cambia el tema de la interfaz.",
+
+        AcrylicTitle = "Acrílico",
+        AcrylicDesc = "El fondo borroso requiere calidad gráfica 8+.",
+
+        TransparencyTitle = "Transparencia",
+        TransparencyDesc = "Hace que la interfaz sea transparente.",
+
+        MenuKeybindTitle = "Tecla minimizar",
+    },
+
+    ["fr-fr"] = { -- Francês
+        -- loader
+        scritpNotSupported = "Aucun script configuré pour ce jeu.",
+
+        -- death ball
+        windowTitle = "MOON en cours d'exécution sur ",
+
+        mainParagraph = "Bonjour, ",
+        mainParagraphContent = "Licence valable jusqu'au : ",
+
+        autoParryTitle = "Déviation automatique",
+
+        pingCompTitle = "Compensateur de ping",
+        pingCompDesc = "Ajustez en fonction de votre ms.",
+
+        pingBasedTitle = "Basé sur le ping",
+
+        autoAbilityTitle = "Capacité automatique",
+
+        autoCurveTitle = "Courbe automatique",
+        autoCurveOff = "Désactivé",
+        autoCurveBehind = "Derrière",
+        autoCurveRight = "Droite",
+        autoCurveLeft = "Gauche",
+        autoCurveUP = "Haut",
+        autoCurveRandom = "Aléatoire",
+
+        targetColor = "Couleur cible",
+
+        autoReadyTitle = "Prêt automatique",
+        alwaysReady = "Toujours prêt",
+
+        maxZoom = "Zoom maximum",
+
+        farmHeightTitle = "Hauteur",
+        reviveAll = "Réanimer tout",
+
+        NoneOptions = "Aucun",
+
+        sectionSwords = "Épées",
+        swordSelect = "Sélectionner une épée",
+
+        selectAura = "Sélectionner une aura",
+
+        selectPose = "Sélectionner une pose",
+        sectionPoses = "Poses",
+
+        selectSkybox = "Sélectionner Skybox",
+
+        warningTitle = "Avertissement",
+        warningMessage = "Ces fonctions comportent un risque élevé de bannissement.",
+        exploitSupported = "Votre exploit n'est pas pris en charge.",
+
+        infiniteParryTitle = "Parry infini",
+
+        infiniteDashTitle = "Dash infini",
+        noDashCooldownTitle = "Pas de cooldown du dash",
+        dashPoweTitle = "Puissance du dash",
+
+        infiniteJumpTitle = "Saut infini",
+
+        mainTab = "Principal",
+        farmTab = "Farm",
+        visualsTab = "Visuels",
+        rageTab = "Rage",
+        bindsTab = "Raccourcis",
+        settingsTab = "Paramètres",
+
+        --Fluent
+        configurationSettings = "Paramètres",
+        configName = "Nom de la configuration",
+        configList = "Liste des configurations",
+        createConfig = "Créer la configuration",
+        loadConfig = "Charger la configuration",
+        saveConfig = "Enregistrer la configuration",
+        refreshList = "Actualiser la liste",
+        setAutoLoad = "Définir comme chargement automatique",
+        currentAutoload = "Configuration de chargement automatique actuelle : ",
+        interface = "Interface",
+        configLoader = "Chargeur de configuration",
+        failedToLoadAutoLoad = "Échec du chargement de la configuration automatique : ",
+        autoLoadedConfig = "Configuration %q chargée automatiquement",
+        invalidConfigName = "Nom de configuration invalide (vide)",
+        failedToSaveConfig = "Échec de l'enregistrement de la configuration : ",
+        createdConfig = "Configuration %q créée",
+        failedToLoadConfig = "Échec du chargement de la configuration : ",
+        loadedConfig = "Configuration %q chargée",
+        failedToOverwrite = "Échec de l'écrasement de la configuration : ",
+        overwriteConfig = "Écraser la configuration",
+        overwroteConfig = "Configuration %q écrasée",
+        setToAutoLoad = "Configuration %q définie pour chargement automatique",
+        search = "Recherche....",
+        currentAutoLoadNone = "Configuration de chargement automatique actuelle : aucune",
+
+
+        -- interface manager
+        InterfaceThemeTitle = "Thème",
+        InterfaceThemeDesc = "Modifie le thème de l'interface.",
+
+        AcrylicTitle = "Acrylique",
+        AcrylicDesc = "L'arrière-plan flou nécessite une qualité graphique 8+.",
+
+        TransparencyTitle = "Transparence",
+        TransparencyDesc = "Rend l'interface transparente.",
+
+        MenuKeybindTitle = "Touche minimiser",
+    },
+
+    ["de-de"] = { -- Alemão
+        -- loader
+        scritpNotSupported = "Für dieses Spiel sind keine Skripte konfiguriert.",
+
+        -- death ball
+        windowTitle = "MOON läuft in ",
+
+        mainParagraph = "Hallo, ",
+        mainParagraphContent = "Lizenz gültig bis: ",
+
+        autoParryTitle = "Automatische Ablenkung",
+
+        pingCompTitle = "Ping-Kompensator",
+        pingCompDesc = "Anpassen entsprechend Ihrem ms.",
+
+        pingBasedTitle = "Ping-basiert",
+
+        autoAbilityTitle = "Automatische Fähigkeit",
+
+        autoCurveTitle = "Automatische Kurve",
+        autoCurveOff = "Aus",
+        autoCurveBehind = "Hinten",
+        autoCurveRight = "Rechts",
+        autoCurveLeft = "Links",
+        autoCurveUP = "Oben",
+        autoCurveRandom = "Zufällig",
+
+        targetColor = "Ziel-Farbe",
+
+        autoReadyTitle = "Auto bereit",
+        alwaysReady = "Immer bereit",
+
+        maxZoom = "Maximaler Zoom",
+
+        farmHeightTitle = "Höhe",
+        reviveAll = "Alle wiederbeleben",
+
+        NoneOptions = "Keine",
+
+        sectionSwords = "Schwerter",
+        swordSelect = "Schwert auswählen",
+
+        selectAura = "Aura auswählen",
+
+        selectPose = "Pose auswählen",
+        sectionPoses = "Posen",
+
+        selectSkybox = "Skybox auswählen",
+
+        warningTitle = "Warnung",
+        warningMessage = "Diese Funktionen bergen ein hohes Bannrisiko.",
+        exploitSupported = "Ihr Exploit wird nicht unterstützt.",
+
+        infiniteParryTitle = "Unendliches Parry",
+
+        infiniteDashTitle = "Unendlicher Dash",
+        noDashCooldownTitle = "Kein Dash-Cooldown",
+        dashPoweTitle = "Dash-Power",
+
+        infiniteJumpTitle = "Unendlicher Sprung",
+
+        mainTab = "Haupt",
+        farmTab = "Farm",
+        visualsTab = "Visuelles",
+        rageTab = "Wut",
+        bindsTab = "Tastenkürzel",
+        settingsTab = "Einstellungen",
+
+        --Fluent
+        configurationSettings = "Einstellungen",
+        configName = "Konfigurationsname",
+        configList = "Konfigurationen",
+        createConfig = "Konfiguration erstellen",
+        loadConfig = "Konfiguration laden",
+        saveConfig = "Konfiguration speichern",
+        refreshList = "Liste aktualisieren",
+        setAutoLoad = "Als Autoload festlegen",
+        currentAutoload = "Aktuelle Autoload-Konfiguration: ",
+        interface = "Benutzeroberfläche",
+        configLoader = "Konfigurations-Loader",
+        failedToLoadAutoLoad = "Autoload-Konfiguration konnte nicht geladen werden: ",
+        autoLoadedConfig = "Konfiguration %q automatisch geladen",
+        invalidConfigName = "Ungültiger Konfigurationsname (leer)",
+        failedToSaveConfig = "Konfiguration konnte nicht gespeichert werden: ",
+        createdConfig = "Konfiguration %q erstellt",
+        failedToLoadConfig = "Konfiguration konnte nicht geladen werden: ",
+        loadedConfig = "Konfiguration %q geladen",
+        failedToOverwrite = "Konfiguration konnte nicht überschrieben werden: ",
+        overwriteConfig = "Konfiguration überschreiben",
+        overwroteConfig = "Konfiguration %q überschrieben",
+        setToAutoLoad = "Konfiguration %q für Autoload festgelegt",
+        search = "Suchen...",
+        currentAutoLoadNone = "Aktuelle Autoload-Konfiguration: keine",
+
+
+        -- interface manager
+        InterfaceThemeTitle = "Thema",
+        InterfaceThemeDesc = "Ändert das Design der Benutzeroberfläche.",
+
+        AcrylicTitle = "Acryl",
+        AcrylicDesc = "Der unscharfe Hintergrund erfordert Grafikqualität 8+.",
+
+        TransparencyTitle = "Transparenz",
+        TransparencyDesc = "Macht die Schnittstelle transparent.",
+
+        MenuKeybindTitle = "Minimieren-Taste",
+    },
+
+    ["ru-ru"] = { -- Russo
+        -- loader
+        scritpNotSupported = "Для этой игры не настроены скрипты.",
+
+        -- death ball
+        windowTitle = "MOON запущен на ",
+
+        mainParagraph = "Привет, ",
+        mainParagraphContent = "Лицензия действительна до: ",
+
+        autoParryTitle = "Автоматическое отклонение",
+
+        pingCompTitle = "Компенсатор пинга",
+        pingCompDesc = "Настройте в соответствии с вашим ms.",
+
+        pingBasedTitle = "На основе пинга",
+
+        autoAbilityTitle = "Авто способность",
+
+        autoCurveTitle = "Авто-кривая",
+        autoCurveOff = "Выключено",
+        autoCurveBehind = "Сзади",
+        autoCurveRight = "Справа",
+        autoCurveLeft = "Слева",
+        autoCurveUP = "Вверх",
+        autoCurveRandom = "Случайно",
+
+        targetColor = "Цвет цели",
+
+        autoReadyTitle = "Авто готов",
+        alwaysReady = "Всегда готов",
+
+        maxZoom = "Макс. зум",
+
+        farmHeightTitle = "Высота",
+        reviveAll = "Возродить всех",
+
+        NoneOptions = "Нет",
+
+        sectionSwords = "Мечи",
+        swordSelect = "Выбрать меч",
+
+        selectAura = "Выбрать ауру",
+
+        selectPose = "Выбрать позу",
+        sectionPoses = "Позы",
+
+        selectSkybox = "Выбрать Skybox",
+
+        warningTitle = "Предупреждение",
+        warningMessage = "Эти функции несут высокий риск бана.",
+        exploitSupported = "Ваш эксплойт не поддерживается.",
+
+        infiniteParryTitle = "Бесконечный парри",
+
+        infiniteDashTitle = "Бесконечный рывок",
+        noDashCooldownTitle = "Нет перезарядки рывка",
+        dashPoweTitle = "Сила рывка",
+
+        infiniteJumpTitle = "Бесконечный прыжок",
+
+        mainTab = "Главная",
+        farmTab = "Фарм",
+        visualsTab = "Визуал",
+        rageTab = "Ярость",
+        bindsTab = "Привязки",
+        settingsTab = "Настройки",
+
+        --Fluent
+        configurationSettings = "Настройки",
+        configName = "Имя конфигурации",
+        configList = "Список конфигураций",
+        createConfig = "Создать конфигурацию",
+        loadConfig = "Загрузить конфигурацию",
+        saveConfig = "Сохранить конфигурацию",
+        refreshList = "Обновить список",
+        setAutoLoad = "Установить автозагрузку",
+        currentAutoload = "Текущая автозагружаемая конфигурация: ",
+        interface = "Интерфейс",
+        configLoader = "Загрузчик конфигурации",
+        failedToLoadAutoLoad = "Не удалось загрузить автоконфигурацию: ",
+        autoLoadedConfig = "Автозагрузка конфигурации %q выполнена",
+        invalidConfigName = "Недопустимое имя конфигурации (пустое)",
+        failedToSaveConfig = "Не удалось сохранить конфигурацию: ",
+        createdConfig = "Конфигурация %q создана",
+        failedToLoadConfig = "Не удалось загрузить конфигурацию: ",
+        loadedConfig = "Конфигурация %q загружена",
+        failedToOverwrite = "Не удалось перезаписать конфигурацию: ",
+        overwriteConfig = "Перезаписать конфигурацию",
+        overwroteConfig = "Конфигурация %q перезаписана",
+        setToAutoLoad = "Конфигурация %q установлена для автозагрузки",
+        search = "Поиск...",
+        currentAutoLoadNone = "Текущая конфигурация автозагрузки: отсутствует",
+
+
+        -- interface manager
+        InterfaceThemeTitle = "Тема",
+        InterfaceThemeDesc = "Изменяет тему интерфейса.",
+
+        AcrylicTitle = "Акрил",
+        AcrylicDesc = "Размытый фон требует графического качества 8+.",
+
+        TransparencyTitle = "Прозрачность",
+        TransparencyDesc = "Делает интерфейс прозрачным.",
+
+        MenuKeybindTitle = "Клавиша сворачивания",
+    },
+
+    ["ja-jp"] = { -- Japonês
+        -- loader
+        scritpNotSupported = "このゲームにはスクリプトが設定されていません。",
+
+        -- death ball
+        windowTitle = "MOON 実行中 ",
+
+        mainParagraph = "こんにちは、 ",
+        mainParagraphContent = "ライセンス有効期限: ",
+
+        autoParryTitle = "オートディフレクト",
+
+        pingCompTitle = "ピング補正",
+        pingCompDesc = "MSに合わせて調整してください。",
+
+        pingBasedTitle = "Pingベース",
+
+        autoAbilityTitle = "オートアビリティ",
+
+        autoCurveTitle = "オートカーブ",
+        autoCurveOff = "オフ",
+        autoCurveBehind = "後ろ",
+        autoCurveRight = "右",
+        autoCurveLeft = "左",
+        autoCurveUP = "上",
+        autoCurveRandom = "ランダム",
+
+        targetColor = "ターゲットカラー",
+
+        autoReadyTitle = "オート準備",
+        alwaysReady = "常に準備完了",
+
+        maxZoom = "最大ズーム",
+
+        farmHeightTitle = "高さ",
+        reviveAll = "全員復活",
+
+        NoneOptions = "なし",
+
+        sectionSwords = "剣",
+        swordSelect = "剣を選択",
+
+        selectAura = "オーラを選択",
+
+        selectPose = "ポーズを選択",
+        sectionPoses = "ポーズ",
+
+        selectSkybox = "スカイボックスを選択",
+
+        warningTitle = "警告",
+        warningMessage = "これらの機能はBANの高リスクを伴います。",
+        exploitSupported = "あなたのエクスプロイトはサポートされていません。",
+
+        infiniteParryTitle = "無限パリィ",
+
+        infiniteDashTitle = "無限ダッシュ",
+        noDashCooldownTitle = "ダッシュのクールダウンなし",
+        dashPoweTitle = "ダッシュパワー",
+
+        infiniteJumpTitle = "無限ジャンプ",
+
+        mainTab = "メイン",
+        farmTab = "ファーム",
+        visualsTab = "ビジュアル",
+        rageTab = "レイジ",
+        bindsTab = "キー設定",
+        settingsTab = "設定",
+
+        --Fluent
+        configurationSettings = "設定",
+        configName = "設定名",
+        configList = "設定リスト",
+        createConfig = "設定を作成",
+        loadConfig = "設定を読み込む",
+        saveConfig = "設定を保存",
+        refreshList = "リストを更新",
+        setAutoLoad = "自動読み込みに設定",
+        currentAutoload = "現在の自動読み込み設定: ",
+        interface = "インターフェース",
+        configLoader = "設定ローダー",
+        failedToLoadAutoLoad = "自動読み込み設定の読み込みに失敗しました: ",
+        autoLoadedConfig = "設定 %q を自動読み込みしました",
+        invalidConfigName = "無効な設定名（空です）",
+        failedToSaveConfig = "設定の保存に失敗しました: ",
+        createdConfig = "設定 %q を作成しました",
+        failedToLoadConfig = "設定の読み込みに失敗しました: ",
+        loadedConfig = "設定 %q を読み込みました",
+        failedToOverwrite = "設定の上書きに失敗しました: ",
+        overwriteConfig = "構成を上書きする",
+        overwroteConfig = "設定 %q を上書きしました",
+        setToAutoLoad = "設定 %q を自動読み込みに設定しました",
+        search = "検索...",
+        currentAutoLoadNone = "現在の自動ロード設定: なし",
+
+
+        -- interface manager
+        InterfaceThemeTitle = "テーマ",
+        InterfaceThemeDesc = "インターフェースのテーマを変更します。",
+
+        AcrylicTitle = "アクリル",
+        AcrylicDesc = "ぼかし背景にはグラフィック品質8以上が必要です。",
+
+        TransparencyTitle = "透明性",
+        TransparencyDesc = "インターフェースを透明にします。",
+
+        MenuKeybindTitle = "最小化キー",
+    }
+}
+
+-- Supondo que você já tenha o módulo Translations
+local Translations = Translations or {}
+Translations.data = Translations.data or {}
+
+local Players = game:GetService("Players")
+local UserSettings = UserSettings()
+
+-- Valor que vai armazenar a locale detectada
+local localeValue = Instance.new("StringValue")
+localeValue.Name = "DetectedLocale"
+localeValue.Parent = Players.LocalPlayer or Players.PlayerAdded:Wait()
+
+-- Função de detecção de idioma
+local function detectLocale()
+    local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
+    local locale
+
+    -- Tenta LocaleId do LocalPlayer
+    pcall(function()
+        locale = player.LocaleId
+    end)
+
+    -- Se não der certo, tenta UserGameSettings
+    if not locale or locale == "" then
+        pcall(function()
+            locale = UserSettings:GetService("UserGameSettings").LocaleId
+        end)
+    end
+
+    -- Espera um pouco caso ainda não tenha
+    local tries = 0
+    while (not locale or locale == "") and tries < 50 do
+        task.wait(0.1)
+        tries += 1
+        pcall(function()
+            locale = player.LocaleId
+        end)
+        if not locale or locale == "" then
+            pcall(function()
+                locale = UserSettings:GetService("UserGameSettings").LocaleId
+            end)
+        end
+    end
+
+    -- fallback para inglês
+    locale = (locale and locale ~= "" and locale:lower()) or "en-us"
+
+    -- se não tiver tradução disponível, força inglês
+    if not Translations.data[locale] then
+        locale = "en-us"
+    end
+
+    localeValue.Value = locale
+end
+
+-- Roda a detecção em background
+task.spawn(detectLocale)
+
+-- Função de tradução
+function Translations.t(key)
+    local locale = localeValue.Value or "en-us"
+    if Translations.data[locale] and Translations.data[locale][key] then
+        return Translations.data[locale][key]
+    else
+        return Translations.data["en-us"][key] or key
+    end
+end
+
+
+
+
+return Translations
