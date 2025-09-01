@@ -398,10 +398,10 @@ return function(Tab, Fluent)
     -- Função para pegar ping do player via PingLabel
     local function getPing()
         local success, pingText = pcall(function()
-            local label = player.PlayerGui:WaitForChild("HUD")
-                            :WaitForChild("HolderLeftBottom")
-                            :WaitForChild("ServerStatistics")
-                            :WaitForChild("PingLabel")
+            local label = player.PlayerGui:FindFirstChild("HUD")
+                            :FindFirstChild("HolderLeftBottom")
+                            :FindFirstChild("ServerStatistics")
+                            :FindFirstChild("PingLabel")
             return label.Text
         end)
     
