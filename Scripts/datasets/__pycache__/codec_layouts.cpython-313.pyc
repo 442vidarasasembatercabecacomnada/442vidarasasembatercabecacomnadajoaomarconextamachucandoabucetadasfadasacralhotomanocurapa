@@ -1,0 +1,307 @@
+--//---------------------------------------------------------------------------------------------------------------
+-- Farm
+
+local Translations = _G.Translations
+
+return function(Tab, Fluent)
+
+    do
+
+	local Players = game:GetService("Players")
+	local LocalPlayer = Players.LocalPlayer
+	local Workspace = game:GetService("Workspace")
+	local RunService = game:GetService("RunService") -- se for usar loops ou Heartbeat
+
+	local CONFIG = {
+		REVIVE_FOLDER_NAME = "ReviveParts",
+		TELEPORT_Y_OFFSET = 3,
+		TELEPORT_TIMEOUT = 1.8,
+		WAIT_AFTER_TP = 0.15,
+		WAIT_AFTER_CLICK = 0.2,
+		ALIGN_MAX_FORCE = 200000,
+		ALIGN_RESPONSIVENESS = 180,
+		BOSS_CHECK_INTERVAL = 0.8,
+		INITIAL_BOSS_DETECT_DELAY = 3,
+		COLLIDER_REMOVE_TOLERANCE = 0.1,
+		SPECIFIC_COLLIDER_POS = Vector3.new(463.603, 310.282, 1245.33)
+	}
+
+	local bossCoordinates = {
+		["VillainMech"] = Vector3.new(476.02, 348.572, 1161.245),
+		["TheStatue"] = Vector3.new(462.908, 368.243, 1264.58),
+		["CursedSpirit"] = Vector3.new(461.006, 350, 1180.881)
+	}
+
+	local currentFarmHeightY = 350
+	local autoFarmEnabled = false
+	local currentFarmingBossName = nil
+	local isFarmMoverActive = false
+	local lastKnownFarmCFrame = nil
+	local previousDetectedBossInMap = nil
+	local bossJustAppeared = false
+	local farmAlignPosition, farmRootAttachment = nil, nil
+
+	local function getCharacterComponents()
+		local char = LocalPlayer.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		local hum = char and char:FindFirstChild("Humanoid")
+		if not (char and hrp and hum and hum.Health > 0) then return nil, nil, nil end
+		return char, hrp, hum
+	end
+
+	local function destroyFarmMover()
+		if not isFarmMoverActive then return end
+		isFarmMoverActive = false
+		pcall(function() if farmAlignPosition and farmAlignPosition.Parent then farmAlignPosition:Destroy() end end)
+		pcall(function() if farmRootAttachment and farmRootAttachment.Parent then farmRootAttachment:Destroy() end end)
+		farmAlignPosition, farmRootAttachment = nil, nil
+		local _, hrp = getCharacterComponents()
+		if hrp then pcall(function() hrp.Anchored = false end) end
+	end
+
+	local function arePositionsClose(pos1, pos2, tolerance)
+		if not (pos1 and pos2) then return false end
+		return (math.abs(pos1.X - pos2.X) <= tolerance) and (math.abs(pos1.Y - pos2.Y) <= tolerance) and (math.abs(pos1.Z - pos2.Z) <= tolerance)
+	end
+
+	local function removeSpecificColliderForTheStatue()
+		local targetPos, tolerance = CONFIG.SPECIFIC_COLLIDER_POS, CONFIG.COLLIDER_REMOVE_TOLERANCE
+		local activeMap = Workspace:FindFirstChild("ActiveMap")
+		if not activeMap then return end
+		local statueFolder = activeMap:FindFirstChild("TheStatue")
+		if not statueFolder then return end
+		local playerCollidersFolder = statueFolder:FindFirstChild("PlayerColliders")
+		if not playerCollidersFolder then return end
+		for _, collider in ipairs(playerCollidersFolder:GetChildren()) do
+			if collider:IsA("Part") and arePositionsClose(collider.Position, targetPos, tolerance) then
+				pcall(function() collider:Destroy() end)
+				break
+			end
+		end
+	end
+
+	local function activateFarm(bossName)
+		if not autoFarmEnabled then destroyFarmMover(); return end
+		local _, hrp = getCharacterComponents()
+		if not hrp then destroyFarmMover(); return end
+		local targetBasePos = bossCoordinates[bossName]
+		if not targetBasePos then destroyFarmMover(); return end
+		local targetPosition = Vector3.new(targetBasePos.X, currentFarmHeightY, targetBasePos.Z)
+		if bossName == "TheStatue" then removeSpecificColliderForTheStatue() end
+		lastKnownFarmCFrame = hrp.CFrame
+		currentFarmingBossName = bossName
+		destroyFarmMover()
+		local success = pcall(function()
+			hrp.Anchored = false
+			hrp.Velocity, hrp.RotVelocity = Vector3.zero, Vector3.zero
+			hrp.CFrame = CFrame.new(targetPosition)
+			task.wait(0.05)
+			local _, curHrp = getCharacterComponents()
+			if not curHrp then error("Character invalid post TP") end
+			farmRootAttachment = Instance.new("Attachment", curHrp)
+			farmAlignPosition = Instance.new("AlignPosition", curHrp)
+			farmAlignPosition.Attachment0 = farmRootAttachment
+			farmAlignPosition.Mode = Enum.PositionAlignmentMode.OneAttachment
+			farmAlignPosition.ApplyAtCenterOfMass = true
+			farmAlignPosition.MaxForce = CONFIG.ALIGN_MAX_FORCE
+			farmAlignPosition.Responsiveness = CONFIG.ALIGN_RESPONSIVENESS
+			farmAlignPosition.Position = targetPosition
+			isFarmMoverActive = true
+		end)
+		if not success then
+			destroyFarmMover()
+			currentFarmingBossName = nil
+			lastKnownFarmCFrame = nil
+			if autoFarmEnabled then
+				autoFarmEnabled = false
+				if autoFarmToggleObject and autoFarmToggleObject.SetValue then pcall(function() autoFarmToggleObject:SetValue(false) end) end
+			end
+		end
+	end
+
+	local function deactivateFarm(returnToLastPosition)
+		local lastCFrame = lastKnownFarmCFrame
+		destroyFarmMover()
+		currentFarmingBossName = nil
+		if returnToLastPosition and lastCFrame then
+			local _, hrp = getCharacterComponents()
+			if hrp then
+				pcall(function() hrp.Anchored = false; hrp.CFrame = lastCFrame; task.wait(0.1); hrp.Anchored = false end)
+			end
+		end
+		lastKnownFarmCFrame = nil
+	end
+
+	task.spawn(function()
+		 while task.wait(CONFIG.BOSS_CHECK_INTERVAL) do
+			 local char, hrp, hum = getCharacterComponents()
+			 if not char then
+				 if currentFarmingBossName then deactivateFarm(false) end
+				 previousDetectedBossInMap = nil; continue
+			 end
+			 local activeMap = Workspace:FindFirstChild("ActiveMap")
+			 local bossFoundInMap = nil
+			 if activeMap then
+				 for name, _ in pairs(bossCoordinates) do if activeMap:FindFirstChild(name) then bossFoundInMap = name; break end end
+			 end
+			 if bossFoundInMap ~= previousDetectedBossInMap then
+				 if bossFoundInMap then
+					 if autoFarmEnabled then bossJustAppeared = true
+					 else destroyFarmMover(); currentFarmingBossName = nil
+					 end
+				 elseif currentFarmingBossName then deactivateFarm(false)
+				 end
+				 previousDetectedBossInMap = bossFoundInMap
+			 end
+			 if autoFarmEnabled and bossFoundInMap then
+				 if currentFarmingBossName ~= bossFoundInMap or not isFarmMoverActive then
+					 if bossJustAppeared then
+						 task.wait(CONFIG.INITIAL_BOSS_DETECT_DELAY)
+						 bossJustAppeared = false
+						 if not autoFarmEnabled then continue end
+						 local _, hrpAfterDelay, _ = getCharacterComponents(); if not hrpAfterDelay then continue end
+						 local currentMapCheckAfterDelay = Workspace:FindFirstChild("ActiveMap")
+						 local bossStillThere = currentMapCheckAfterDelay and currentMapCheckAfterDelay:FindFirstChild(bossFoundInMap)
+						 if not bossStillThere then previousDetectedBossInMap = nil; continue end
+						 activateFarm(bossFoundInMap)
+					 else activateFarm(bossFoundInMap)
+					 end
+				 end
+			 elseif not bossFoundInMap and currentFarmingBossName then deactivateFarm(false)
+			 end
+			 if not autoFarmEnabled or not bossFoundInMap then bossJustAppeared = false end
+		 end
+	end)
+
+	_G.autoFarmToggleObject = Tab:AddToggle("AutoFarmToggle", {
+        Title = "Auto farm", 
+        Default = false, 
+        Callback = function(value)
+		    if autoFarmEnabled == value then return end
+		    autoFarmEnabled = value
+		    if value then
+			    local _, hrp, _ = getCharacterComponents()
+			    if not hrp then
+				    autoFarmEnabled = false
+				    if autoFarmToggleObject and autoFarmToggleObject.SetValue then pcall(function() autoFarmToggleObject:SetValue(false) end) end
+				    return
+			    end
+			    local activeMap = Workspace:FindFirstChild("ActiveMap")
+			    local bossAlreadyPresent = nil
+			    if activeMap then for name,_ in pairs(bossCoordinates) do if activeMap:FindFirstChild(name) then bossAlreadyPresent = name; break end end end
+			    if bossAlreadyPresent then activateFarm(bossAlreadyPresent) else destroyFarmMover(); currentFarmingBossName = nil end
+		    else deactivateFarm(true) end
+	    end})
+
+	Tab:AddSlider("HeightSlider", {
+        Title = Translations.t("farmHeightTitle"),
+        Default = 350, 
+        Min = 300, 
+        Max = 380, 
+        Rounding = 0, 
+        Callback = function(value)
+		    currentFarmHeightY = math.floor(value + 0.5)
+		    if isFarmMoverActive and currentFarmingBossName and farmAlignPosition then
+			    local bossBasePos = bossCoordinates[currentFarmingBossName]
+			    if bossBasePos then
+				    local newTargetPos = Vector3.new(bossBasePos.X, currentFarmHeightY, bossBasePos.Z)
+				    pcall(function() farmAlignPosition.Position = newTargetPos end)
+				    local _, hrp = getCharacterComponents()
+				    if hrp then pcall(function() hrp.CFrame = CFrame.new(hrp.Position.X, newTargetPos.Y, hrp.Position.Z) end) end
+			    end
+		    end
+	    end})
+
+	pcall(function() local sliderObj = Tab.Sections and Tab.Sections.AutoFarm and Tab.Sections.AutoFarm.Controls and Tab.Sections.AutoFarm.Controls.HeightSlider; if sliderObj and sliderObj.Value then currentFarmHeightY = math.floor(sliderObj.Value + 0.5) end end)
+
+	Tab:AddButton({ Title = Translations.t("reviveAll"), 
+        Callback = function()
+		local RevivePlayers = game:GetService("Players")
+		local ReviveWorkspace = game:GetService("Workspace")
+		local reviveFolderName = CONFIG.REVIVE_FOLDER_NAME
+		local localPlayerRevive = RevivePlayers.LocalPlayer
+		local _, hrpBeforeRevive = getCharacterComponents()
+		local cframeBeforeRevive = hrpBeforeRevive and hrpBeforeRevive.CFrame
+		local returnCFrame = (autoFarmEnabled and lastKnownFarmCFrame) or cframeBeforeRevive
+		local reviveAlignPos, reviveAttach = nil, nil
+
+		local function destroyReviveMover()
+			 pcall(function() if reviveAlignPos and reviveAlignPos.Parent then reviveAlignPos:Destroy() end end)
+			 pcall(function() if reviveAttach and reviveAttach.Parent then reviveAttach:Destroy() end end)
+			 reviveAlignPos, reviveAttach = nil, nil
+			 local _, hrp = getCharacterComponents(); if hrp then pcall(function() hrp.Anchored = false end) end
+		end
+		local function teleportRevive(targetPos)
+			 local _, hrp = getCharacterComponents(); if not hrp then return false end
+			 destroyFarmMover(); destroyReviveMover()
+			 local success, arrived = pcall(function()
+				 hrp.Anchored = false; hrp.Velocity, hrp.RotVelocity = Vector3.zero, Vector3.zero
+				 reviveAttach = Instance.new("Attachment", hrp)
+				 reviveAlignPos = Instance.new("AlignPosition", hrp)
+				 reviveAlignPos.Attachment0 = reviveAttach
+				 reviveAlignPos.Mode = Enum.PositionAlignmentMode.OneAttachment
+				 reviveAlignPos.ApplyAtCenterOfMass = true
+				 reviveAlignPos.MaxForce = CONFIG.ALIGN_MAX_FORCE
+				 reviveAlignPos.Responsiveness = CONFIG.ALIGN_RESPONSIVENESS
+				 reviveAlignPos.Position = targetPos
+				 hrp.CFrame = CFrame.new(targetPos)
+				 local startTime, currentDist = tick(), (hrp.Position - targetPos).Magnitude
+				 while currentDist > 4 and (tick() - startTime) < CONFIG.TELEPORT_TIMEOUT do
+					 task.wait()
+					 local _, curHrp = getCharacterComponents(); if not curHrp then error("Character invalid during revive TP wait") end
+					 currentDist = (curHrp.Position - targetPos).Magnitude
+				 end
+				 destroyReviveMover()
+				 return currentDist <= 4
+			 end)
+			 if not success then destroyReviveMover(); return false end
+			 return arrived
+		end
+		local function doReviveSequence()
+			 local _, hrp = getCharacterComponents(); if not hrp then return end
+			 local revivePartsFolder = ReviveWorkspace:FindFirstChild(reviveFolderName); if not revivePartsFolder then return end
+			 local prompts = {}
+			 for _, obj in ipairs(revivePartsFolder:GetDescendants()) do
+				 if obj:IsA("ProximityPrompt") then
+					 local partParent = obj.Parent
+					 if partParent and partParent:IsA("BasePart") then table.insert(prompts, {prompt = obj, pos = partParent.Position}); pcall(function() obj.HoldDuration = 0 end) end
+				 end
+			 end
+			 if #prompts == 0 then return end
+			 for _, data in ipairs(prompts) do
+				 if teleportRevive(data.pos + Vector3.new(0, CONFIG.TELEPORT_Y_OFFSET, 0)) then
+					 task.wait(CONFIG.WAIT_AFTER_TP)
+					 local clickSuccess = pcall(function() if typeof(fireproximityprompt) == "function" then fireproximityprompt(data.prompt) else data.prompt:InputHoldBegin(); task.wait(0.05); data.prompt:InputHoldEnd() end end)
+					 task.wait(CONFIG.WAIT_AFTER_CLICK)
+				 end
+				 local _, curHrp = getCharacterComponents(); if not curHrp then destroyReviveMover(); return end
+			 end
+			 if returnCFrame then
+				 if teleportRevive(returnCFrame.Position) then
+					 task.wait(0.1)
+					 local _, finalHrp = getCharacterComponents()
+					 if finalHrp then pcall(function() finalHrp.CFrame = returnCFrame end) end
+					 destroyReviveMover()
+					 if autoFarmEnabled and currentFarmingBossName then task.spawn(activateFarm, currentFarmingBossName) end
+				 else destroyReviveMover() end
+			 else destroyReviveMover() end
+		end
+		local char, hrp, hum = getCharacterComponents()
+		if char and hrp and hum then task.spawn(doReviveSequence)
+		else
+			local conn; conn = localPlayerRevive.CharacterAdded:Once(function(newChar) local newHum = newChar:WaitForChild("Humanoid", 5); if newHum then task.wait(0.5); if newHum.Health > 0 then task.spawn(doReviveSequence) end end end)
+			task.delay(20, function() if conn and conn.Connected then conn:Disconnect() end end)
+		end
+	end})
+
+	local ballRemovedConnection = Workspace.ChildRemoved:Connect(function(child)
+		if child.Name == "Ball" and autoFarmEnabled then
+			autoFarmEnabled = false
+			if autoFarmToggleObject and autoFarmToggleObject.SetValue then pcall(function() autoFarmToggleObject:SetValue(false) end) end
+			deactivateFarm(true)
+		end
+	end)
+
+end
+    
+end
