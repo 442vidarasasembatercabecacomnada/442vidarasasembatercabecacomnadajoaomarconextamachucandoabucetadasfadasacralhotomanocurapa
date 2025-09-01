@@ -1,0 +1,501 @@
+--//---------------------------------------------------------------------------------------------------------------
+-- Visuals
+
+local Translations = _G.Translations
+
+return function(Tab, Fluent)
+
+    do
+
+        local Players = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local Workspace = game:GetService("Workspace")
+
+        local localPlayer = Players.LocalPlayer
+
+        -- Pega todas as swords
+        local SwordData = {}
+        local assets = ReplicatedStorage:FindFirstChild("Assets")
+        if assets then
+            local swordsFolder = assets:FindFirstChild("Swords")
+            if swordsFolder then
+                for _, model in ipairs(swordsFolder:GetChildren()) do
+                    if model:IsA("Model") then
+                table.insert(SwordData, model.Name)
+                    end
+                end
+            end
+        end
+
+        -- Cria lista para dropdown com "NoneOptions" no topo
+        local dropdownValues = { Translations.t("NoneOptions") }
+        for _, name in ipairs(SwordData) do
+            table.insert(dropdownValues, name)
+        end
+
+        -- Pasta para guardar a espada original
+        local storageFolder = ReplicatedStorage:FindFirstChild("SwordStorage_" .. localPlayer.UserId) or Instance.new("Folder")
+        storageFolder.Name = "SwordStorage_" .. localPlayer.UserId
+        storageFolder.Parent = ReplicatedStorage
+
+        local originalSwordFolderName = localPlayer.Name .. " SwordWelds"
+        local mainSwordPartName = "Sword"
+        local mainSwordWeldName = "Weld"
+
+        -- Guardar original
+        local function findAndMoveOriginalSwordToStorage()
+            local movedSomething = false
+            storageFolder:ClearAllChildren()
+            local sourceFolder
+
+            for _, child in ipairs(Workspace:GetChildren()) do
+                if child.Name == originalSwordFolderName and child:IsA("Folder") and #child:GetChildren() > 0 then
+                    sourceFolder = child
+                    break
+                end
+            end
+
+            if sourceFolder then
+                for _, potentialDuplicate in ipairs(Workspace:GetChildren()) do
+                    if potentialDuplicate.Name == originalSwordFolderName and potentialDuplicate:IsA("Folder") and potentialDuplicate ~= sourceFolder then
+                pcall(function() potentialDuplicate:Destroy() end)
+                    end
+                end
+                for _, item in ipairs(sourceFolder:GetChildren()) do
+                    item.Parent = storageFolder
+                    movedSomething = true
+                end
+                return movedSomething
+            end
+
+            local looseItemsToMove = {}
+            local looseSwordPart = Workspace:FindFirstChild(mainSwordPartName)
+            if looseSwordPart and looseSwordPart:IsA("BasePart") then
+                table.insert(looseItemsToMove, looseSwordPart)
+                local looseWeld = Workspace:FindFirstChild(mainSwordWeldName)
+                if looseWeld and looseWeld:IsA("Weld") then
+                    table.insert(looseItemsToMove, looseWeld)
+                end
+            end
+            for _, item in ipairs(looseItemsToMove) do
+                item.Parent = storageFolder
+                movedSomething = true
+            end
+
+            return movedSomething
+        end
+
+        -- Devolver original
+        local function moveOriginalSwordBackToFolder()
+            local itemsInStorage = storageFolder:GetChildren()
+            if #itemsInStorage == 0 then return true end
+
+            local targetFolder = Workspace:FindFirstChild(originalSwordFolderName)
+            if not targetFolder or not targetFolder:IsA("Folder") then
+                if targetFolder then pcall(function() targetFolder:Destroy() end) end
+                targetFolder = Instance.new("Folder")
+                targetFolder.Name = originalSwordFolderName
+                targetFolder.Parent = Workspace
+            end
+
+            for _, child in ipairs(itemsInStorage) do
+                child.Parent = targetFolder
+                task.wait()
+            end
+
+            return #storageFolder:GetChildren() == 0
+        end
+
+        -- UI
+        Tab:AddSection(Translations.t("sectionSwords"))
+
+        Tab:AddDropdown("SwordSelector", {
+            Title = Translations.t("swordSelect"),
+            Values = dropdownValues,
+            Default = Translations.t("NoneOptions"),
+            Callback = function(Value)
+                local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+
+                if Value == Translations.t("NoneOptions") then
+                    -- Remove custom e devolve original
+                    local existingSword = character:FindFirstChild("Sword")
+                    if existingSword then existingSword:Destroy() end
+                    moveOriginalSwordBackToFolder()
+                    return
+                end
+
+                -- Guardar original (se ainda não guardou)
+                findAndMoveOriginalSwordToStorage()
+
+                -- Equipar espada custom
+                local swordModel = ReplicatedStorage.Assets.Swords:FindFirstChild(Value)
+                if swordModel then
+                    local sword = swordModel:FindFirstChild("Sword"):Clone()
+                    local offsetValue = swordModel:FindFirstChild("Offset").Value
+
+                    -- remove qualquer sword atual
+                    local existingSword = character:FindFirstChild("Sword")
+                    if existingSword then existingSword:Destroy() end
+
+                    sword.Parent = character
+
+                    local weld = Instance.new("Weld")
+                    weld.Part0 = sword
+                    weld.Part1 = character:FindFirstChild("rtool")
+                    weld.C1 = offsetValue
+                    weld.Parent = sword
+
+                    sword.Anchored = false
+                end
+            end
+        })
+
+        Tab:AddSection("Auras")
+
+        local StarterPlayerScripts = game:GetService("StarterPlayer").StarterPlayerScripts
+        local Workspace = game:GetService("Workspace")
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+        local currentAuraFolder
+
+        local auraList = {}
+        local auraPositions = {
+
+            ["AngelAura"] = CFrame.new(0, 0, -0.5),
+            ["ShadowAura"] = CFrame.new(0, -3, 0),
+            ["ShadowAura"] = CFrame.new(0, -3, -0.5),
+            ["DreamwalkerAura"] = CFrame.new(0, -3, 0),
+            ["HallowtideAura"] = CFrame.new(0, -3, 0),
+            ["BloodAura"] = CFrame.new(0, -2.8, 0),
+            ["InfernoAura"] = CFrame.new(0, -3, 0),
+            ["PoisonAura"] = CFrame.new(0, -2.8, 0),
+            ["PortalAura"] = CFrame.new(0, -2.9, 0),
+            ["LunarAura"] = CFrame.new(0, -2.9, 0),
+            ["RoseAura"] = CFrame.new(0, -2.9, 0),
+            ["ConstellationAura"] = CFrame.new(0, -2.9, 0),
+            ["ZenithAura"] = CFrame.new(0, -2.9, 0),
+            ["IgnisAura"] = CFrame.new(0, -2.9, 0),
+            ["EmperorAura"] = CFrame.new(0, -2.9, 0),
+            ["GoldenDragonAura"] = CFrame.new(0, -2.9, 0),
+            ["ShogunAura"] = CFrame.new(0, -2.9, 0),
+            ["CosmicAura"] = CFrame.new(0, -2.9, 0),
+            ["VoidAura"] = CFrame.new(0, -500, 0),
+            ["EclipseAura"] = CFrame.new(0, -500, 0),
+    
+        }
+
+        for _, child in ipairs(StarterPlayerScripts:GetChildren()) do
+            if child:FindFirstChild("Aura") then
+                local aura = child.Aura
+                local baseAura = aura:FindFirstChild("BaseAura")
+                if baseAura then
+                    for _, item in ipairs(baseAura:GetChildren()) do
+                        if #item:GetChildren() > 0 then
+                            table.insert(auraList, {
+                                Name = item.Name,
+                                Children = item:GetChildren()
+                            })
+                        end
+                    end
+                end
+            end
+        end
+
+        local auraOptions = {Translations.t("NoneOptions")}
+        for _, aura in ipairs(auraList) do
+            table.insert(auraOptions, aura.Name)
+        end
+
+        Tab:AddDropdown("AuraSelector", {
+            Title = Translations.t("selectAura"),
+            Values = auraOptions,
+            Default = Translations.t("NoneOptions"),
+            Callback = function(selected)
+                if currentAuraFolder then
+                    for _, child in ipairs(currentAuraFolder:GetChildren()) do
+                        if child:IsA("BasePart") then
+                            child:Destroy()
+                        end
+                    end
+                    currentAuraFolder:Destroy()
+                end
+
+                if selected == Translations.t("NoneOptions") then
+                    currentAuraFolder = nil
+                    return
+                end
+
+                for _, aura in ipairs(auraList) do
+                    if aura.Name == selected then
+                        local auraFolder = Instance.new("Folder")
+                        auraFolder.Name = selected
+                        auraFolder.Parent = Workspace
+                
+                        currentAuraFolder = auraFolder
+
+                        local auraPosition = auraPositions[selected] or CFrame.new(0, 0, 0)
+
+                        for _, subItem in ipairs(aura.Children) do
+                            local clone = subItem:Clone()
+
+                            if clone:IsA("BasePart") then
+                                local weld = Instance.new("Weld")
+                                weld.Name = "AuraWeld"
+                                weld.Part0 = humanoidRootPart
+                                weld.Part1 = clone
+                                weld.C0 = auraPosition
+                                weld.C1 = CFrame.new(0, 0, 0)
+
+                                clone.Parent = auraFolder
+                                clone.Anchored = false
+
+                                if clone:IsA("BasePart") then
+                                    clone.CanCollide = false
+                                end
+
+                                weld.Parent = clone
+                            elseif clone:IsA("Model") then
+                                for _, part in ipairs(clone:GetChildren()) do
+                                    if part:IsA("BasePart") then
+                                        local weld = Instance.new("Weld")
+                                        weld.Name = "AuraWeld"
+                                        weld.Part0 = humanoidRootPart
+                                        weld.Part1 = part
+                                        weld.C0 = auraPosition
+                                        weld.C1 = CFrame.new(0, 0, 0)
+
+                                        part.Parent = auraFolder
+                                        part.Anchored = false
+
+                                        if part:IsA("BasePart") then
+                                            part.CanCollide = false
+                                        end
+                                        weld.Parent = part
+                                    end
+                                end
+                            end
+                            local tag = Instance.new("BoolValue")
+                            tag.Name = "AuraTag"
+                            tag.Parent = clone
+                        end
+                        auraFolder.Parent = Workspace
+                    end
+                end
+            end
+        })
+
+        Tab:AddSection(Translations.t("sectionPoses"))
+
+        local SheetItemData = require(ReplicatedStorage.DataBins.ItemData:FindFirstChild("SheetItemData"))
+
+        local AnimData = {Translations.t("NoneOptions")}
+        for key, item in SheetItemData do
+	        if item.Category == "Pose" and item.DisplayName then
+		        table.insert(AnimData, item.DisplayName)
+	        end
+        end
+
+        local function getPoseUsageDataByDisplayName(displayName)
+	        for key, item in SheetItemData do
+		        if item.Category == "Pose" and item.DisplayName == displayName then
+			        return item.UsageData
+		        end
+	        end
+	        return nil
+        end
+
+        Tab:AddDropdown("AnimChanger", {
+	        Title = Translations.t("selectPose"),
+	        Values = AnimData,
+	        Default = AnimData[1] or Translations.t("NoneOptions"),
+	        Callback = function(Value)
+		        local player = game.Players.LocalPlayer
+		        local character = player.Character or player.CharacterAdded:Wait()
+		        local humanoid = character:WaitForChild("Humanoid")
+
+		        local animationId
+
+		        if Value == Translations.t("NoneOptions") then
+			        animationId = "0"
+		        else
+			        local usageData = getPoseUsageDataByDisplayName(Value)
+			        if not usageData then
+				        warn("No Pose found with DisplayName: " .. tostring(Value))
+				        return
+			        end
+
+			        animationId = usageData.AnimationId or usageData[1] or usageData
+
+			        if not animationId or tostring(animationId) == "" then
+				        warn("No AnimationId found in UsageData for Pose: " .. tostring(Value))
+				        return
+			        end
+		        end
+
+		        local animation = character:FindFirstChild("Animation") or Instance.new("Animation")
+		        animation.AnimationId = "rbxassetid://" .. tostring(animationId)
+		        animation.Parent = character
+		        local animationTrack = humanoid:LoadAnimation(animation)
+		        local function onIdle()
+			        if humanoid.MoveDirection.Magnitude == 0 then
+				        if not animationTrack.IsPlaying then
+					        animationTrack:Play()
+				        end
+			        else
+				        if animationTrack.IsPlaying then
+					        animationTrack:Stop()
+				        end
+			        end
+		        end
+
+		        humanoid.Running:Connect(onIdle)
+
+		        local previousAnimationId = animation.AnimationId
+		        game:GetService("RunService").Heartbeat:Connect(function()
+			        if animation.AnimationId ~= previousAnimationId and Value then
+				        animationTrack:Stop()
+				        animationTrack:Destroy()
+				        animationTrack = humanoid:LoadAnimation(animation)
+				        animationTrack:Play()
+				        previousAnimationId = animation.AnimationId
+			        end
+		        end)
+	        end
+        })
+
+
+        local SKYBOXES = {
+            ["1"] = {
+                SkyboxBk = "rbxassetid://15502324143",
+                SkyboxDn = "rbxassetid://15502324962",
+                SkyboxFt = "rbxassetid://15502325676",
+                SkyboxLf = "rbxassetid://15502326432",
+                SkyboxRt = "rbxassetid://15502327161",
+                SkyboxUp = "rbxassetid://15502328272",
+                CelestialBodiesShown = false,
+                StarCount = 3000
+            },
+            ["2"] = {
+                SkyboxBk = "rbxassetid://12216109205",
+                SkyboxDn = "rbxassetid://12216109875",
+                SkyboxFt = "rbxassetid://12216109489",
+                SkyboxLf = "rbxassetid://12216110170",
+                SkyboxRt = "rbxassetid://12216110471",
+                SkyboxUp = "rbxassetid://12216108877",
+                CelestialBodiesShown = true,
+                StarCount = 3000
+            },
+            ["3"] = {
+                SkyboxBk = "http://www.roblox.com/asset/?id=15670828196",
+                SkyboxDn = "http://www.roblox.com/asset/?id=15670829373",
+                SkyboxFt = "http://www.roblox.com/asset/?id=15670830476",
+                SkyboxLf = "http://www.roblox.com/asset/?id=15670831662",
+                SkyboxRt = "http://www.roblox.com/asset/?id=15670833256",
+                SkyboxUp = "http://www.roblox.com/asset/?id=15670834206",
+                CelestialBodiesShown = true,
+                StarCount = 3000
+            },
+            ["4"] = {
+                SkyboxBk = "http://www.roblox.com/asset/?id=150939216",
+                SkyboxDn = "http://www.roblox.com/asset/?id=150939223",
+                SkyboxFt = "http://www.roblox.com/asset/?id=150939233",
+                SkyboxLf = "http://www.roblox.com/asset/?id=150939244",
+                SkyboxRt = "http://www.roblox.com/asset/?id=150939249",
+                SkyboxUp = "http://www.roblox.com/asset/?id=150939252",
+                CelestialBodiesShown = true,
+                StarCount = 3000
+            },
+            ["5"] = {
+                SkyboxBk = "rbxassetid://12635309703",
+                SkyboxDn = "rbxassetid://12635311686",
+                SkyboxFt = "rbxassetid://12635312870",
+                SkyboxLf = "rbxassetid://12635313718",
+                SkyboxRt = "rbxassetid://12635315817",
+                SkyboxUp = "rbxassetid://12635316856",
+                CelestialBodiesShown = true,
+                SunAngularSize = 11,
+                StarCount = 1334
+            }
+        }
+
+        local skyboxOptions = {Translations.t("NoneOptions")}
+        for n, _ in pairs(SKYBOXES) do table.insert(skyboxOptions, n) end
+
+        local selectedSkybox = Translations.t("NoneOptions")
+        local skyboxLoopConnection = nil
+
+        local function applySkybox(skyboxName)
+            local data = SKYBOXES[skyboxName]
+            if not data then return end
+            local Lighting = game:GetService("Lighting")
+            local TweenService = game:GetService("TweenService")
+            local sky = Lighting:FindFirstChildOfClass("Sky")
+            if not sky then sky = Instance.new("Sky") sky.Parent = Lighting end
+            local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad)
+            sky.SkyboxBk = data.SkyboxBk or sky.SkyboxBk
+            sky.SkyboxDn = data.SkyboxDn or sky.SkyboxDn
+            sky.SkyboxFt = data.SkyboxFt or sky.SkyboxFt
+            sky.SkyboxLf = data.SkyboxLf or sky.SkyboxLf
+            sky.SkyboxRt = data.SkyboxRt or sky.SkyboxRt
+            sky.SkyboxUp = data.SkyboxUp or sky.SkyboxUp
+            if data.CelestialBodiesShown ~= nil then sky.CelestialBodiesShown = data.CelestialBodiesShown end
+            if data.StarCount ~= nil and sky.StarCount ~= nil then
+                TweenService:Create(sky, tweenInfo, {StarCount = data.StarCount}):Play()
+            end
+            if data.SunAngularSize ~= nil and sky.SunAngularSize ~= nil then
+                TweenService:Create(sky, tweenInfo, {SunAngularSize = data.SunAngularSize}):Play()
+            end
+            if data.MoonAngularSize ~= nil and sky.MoonAngularSize ~= nil then
+                TweenService:Create(sky, tweenInfo, {MoonAngularSize = data.MoonAngularSize}):Play()
+            end
+            if data.Exposure ~= nil and sky.Exposure ~= nil then
+                TweenService:Create(sky, tweenInfo, {Exposure = data.Exposure}):Play()
+            end
+        end
+
+        local function startSkyboxLoop()
+            if skyboxLoopConnection then
+                skyboxLoopConnection:Disconnect()
+            end
+            if selectedSkybox == Translations.t("NoneOptions") then return end
+            skyboxLoopConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                applySkybox(selectedSkybox)
+            end)
+        end
+
+        local function stopSkyboxLoop()
+            if skyboxLoopConnection then
+                skyboxLoopConnection:Disconnect()
+                skyboxLoopConnection = nil
+            end
+        end
+
+        local function resetToDefaultSkybox()
+            local Lighting = game:GetService("Lighting")
+            local sky = Lighting:FindFirstChildOfClass("Sky")
+            if sky then
+                sky:Destroy()
+            end
+        end
+
+        Tab:AddSection("Skybox")
+
+        Tab:AddDropdown("SkyboxSelector", {
+            Title = Translations.t("selectSkybox"), Values = skyboxOptions, Default = Translations.t("NoneOptions"),
+            Callback = function(Value)
+                selectedSkybox = Value
+                stopSkyboxLoop()
+                if Value == Translations.t("NoneOptions") then
+                    resetToDefaultSkybox()
+                else
+                    startSkyboxLoop()
+                end
+            end
+        })
+
+    end
+    
+end
