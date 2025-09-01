@@ -1,0 +1,64 @@
+--//---------------------------------------------------------------------------------------------------------------
+-- Binds
+
+local Translations = _G.Translations
+
+return function(Tab, Fluent)
+
+    do
+
+    Tab:AddSection("Main")
+
+    local AutoParryKeybind = Tab:AddKeybind("parrybind", {
+        Title = "Parry bind",
+        Mode = "Toggle",
+        Default = "G",
+        Callback = function(Value)
+            _G.AutoParryToggle:SetValue(not _G.AutoParryToggle.Value)
+        end
+    })
+
+    local AutoAbilityKeybind = Tab:AddKeybind("abilitybind", {
+        Title = "Auto ability bind",
+        Mode = "Toggle",
+        Default = "I",
+        Callback = function(Value)
+            _G.AutoAbilityToggle:SetValue(not _G.AutoAbilityToggle.Value)
+        end
+    })
+
+    Tab:AddSection("Farm")
+
+    local AutoFarmKeybind = Tab:AddKeybind("autofarmbind", {
+        Title = "Auto farm bind",
+        Mode = "Toggle",
+        Default = "P",
+        Callback = function()
+            if InfParryToggle then
+                _G.autoFarmToggleObject:SetValue(not _G.autoFarmToggleObject.Value)
+            end
+        end
+    })
+
+    exploitSupported = _G.exploitSupported
+
+    if _G.exploitSupported then
+
+        Tab:AddSection("Rage")
+
+        local InfParryKeybind = Tab:AddKeybind("infparrybind", {
+            Title = "Infinite parry bind",
+            Mode = "Toggle",
+            Default = "U",
+            Callback = function()
+                if InfParryToggle then
+                    _G.InfParryToggle:SetValue(not _G.InfParryToggle.Value)
+                end
+            end
+        })
+
+    end
+
+end
+    
+end
