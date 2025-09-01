@@ -7,7 +7,8 @@ local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/4
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/442vidarasasembatercabecacomnada/442vidarasasembatercabecacomnadajoaomarconextamachucandoabucetadasfadasacralhotomanocurapa/refs/heads/main/Scripts/__pycache__/compatibility_checker.cpython-313.pyc"))()
 
 local Translations = _G.Translations
-local identifyexecutor = _G.identifyexecutor
+
+local identifyexecutor = identifyexecutor and identifyexecutor() or "unknown"
 
 local Window = Fluent:CreateWindow({
     Title = Translations.t("windowTitle") .. identifyexecutor,
