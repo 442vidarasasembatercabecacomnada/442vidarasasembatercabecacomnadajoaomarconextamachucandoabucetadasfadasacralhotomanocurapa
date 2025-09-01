@@ -1,0 +1,42 @@
+[
+    {
+        "product_name": "AppleALC",
+        "id": 232063254,
+        "url": "https://github.com/dortania/build-repo/releases/download/AppleALC-8d75f0f/AppleALC-1.9.6-RELEASE.zip"
+    },
+    {
+        "product_name": "AppleMCEReporterDisabler",
+        "id": 738162736,
+        "url": "https://github.com/acidanthera/bugtracker/files/3703498/AppleMCEReporterDisabler.kext.zip"
+    },
+    {
+        "product_name": "Lilu",
+        "id": 232062718,
+        "url": "https://github.com/dortania/build-repo/releases/download/Lilu-161537e/Lilu-1.7.2-RELEASE.zip"
+    },
+    {
+        "product_name": "NootedRed",
+        "id": 761421068,
+        "url": "https://nightly.link/ChefKissInc/NootedRed/workflows/main/master/Artifacts.zip"
+    },
+    {
+        "product_name": "OpenCorePkg",
+        "id": 240399775,
+        "url": "https://github.com/dortania/build-repo/releases/download/OpenCorePkg-79ea932/OpenCore-1.0.6-RELEASE.zip"
+    },
+    {
+        "product_name": "RealtekRTL8111",
+        "id": 130015132,
+        "url": "https://github.com/Mieze/RTL8111_driver_for_OS_X/releases/download/2.4.2/RealtekRTL8111-V2.4.2.zip"
+    },
+    {
+        "product_name": "RestrictEvents",
+        "id": 232065220,
+        "url": "https://github.com/dortania/build-repo/releases/download/RestrictEvents-9265e78/RestrictEvents-1.1.7-RELEASE.zip"
+    },
+    {
+        "product_name": "VirtualSMC",
+        "id": 232065486,
+        "url": "https://github.com/dortania/build-repo/releases/download/VirtualSMC-55b89a2/VirtualSMC-1.3.8-RELEASE.zip"
+    }
+]
