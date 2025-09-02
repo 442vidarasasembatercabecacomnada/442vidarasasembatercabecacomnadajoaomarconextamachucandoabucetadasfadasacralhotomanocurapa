@@ -1,5 +1,3 @@
-local Translations = _G.Translations
-
 local httpService = game:GetService("HttpService")
 
 local SaveManager = {} do
@@ -187,17 +185,17 @@ local SaveManager = {} do
 			local success, err = self:Load(name)
 			if not success then
 				return self.Library:Notify({
-					Title = Translations.t("interface"),
-					Content = Translations.t("configLoader"),
-					SubContent = Translations.t("failedToLoadAutoLoad") .. err,
+					Title = "Interface",
+					Content = "Config loader",
+					SubContent = "Failed to load autoload config: " .. err,
 					Duration = 7
 				})
 			end
 
 			self.Library:Notify({
-				Title = Translations.t("interface"),
-				Content = Translations.t("configLoader"),
-				SubContent = string.format(Translations.t("autoLoadedConfig"), name),
+				Title = "Interface",
+				Content = "Config loader",
+				SubContent = string.format("Auto loaded config %q", name),
 				Duration = 7
 			})
 		end
@@ -206,21 +204,21 @@ local SaveManager = {} do
 	function SaveManager:BuildConfigSection(tab)
 		assert(self.Library, "Must set SaveManager.Library")
 
-		local section = tab:AddSection(Translations.t("configurationSettings"))
+		local section = tab:AddSection("Configuration")
 
-		section:AddInput("SaveManager_ConfigName",    { Title = Translations.t("configName") })
-		section:AddDropdown("SaveManager_ConfigList", { Title = Translations.t("configList"), Values = self:RefreshConfigList(), AllowNull = true })
+		section:AddInput("SaveManager_ConfigName",    { Title = "Config name" })
+		section:AddDropdown("SaveManager_ConfigList", { Title = "Config list", Values = self:RefreshConfigList(), AllowNull = true })
 
 		section:AddButton({
-            Title = Translations.t("createConfig"),
+            Title = "Create config",
             Callback = function()
                 local name = SaveManager.Options.SaveManager_ConfigName.Value
 
                 if name:gsub(" ", "") == "" then 
                     return self.Library:Notify({
-						Title = Translations.t("interface"),
-						Content = Translations.t("configLoader"),
-						SubContent = Translations.t("invalidConfigName"),
+						Title = "Interface",
+						Content = "Config loader",
+						SubContent = "Invalid config name (empty)",
 						Duration = 7
 					})
                 end
@@ -228,17 +226,17 @@ local SaveManager = {} do
                 local success, err = self:Save(name)
                 if not success then
                     return self.Library:Notify({
-						Title = Translations.t("interface"),
-						Content = Translations.t("configLoader"),
-						SubContent = Translations.t("failedToSaveConfig") .. err,
+						Title = "Interface",
+						Content = "Config loader",
+						SubContent = "Failed to save config: " .. err,
 						Duration = 7
 					})
                 end
 
 				self.Library:Notify({
-					Title = Translations.t("interface"),
-					Content = Translations.t("configLoader"),
-					SubContent = string.format(Translations.t("createdConfig"), name),
+					Title = "Interface",
+					Content = "Config loader",
+					SubContent = string.format("Created config %q", name),
 					Duration = 7
 				})
 
@@ -247,69 +245,69 @@ local SaveManager = {} do
             end
         })
 
-        section:AddButton({Title = Translations.t("loadConfig"), Callback = function()
+        section:AddButton({Title = "Load config", Callback = function()
 			local name = SaveManager.Options.SaveManager_ConfigList.Value
 
 			local success, err = self:Load(name)
 			if not success then
 				return self.Library:Notify({
-					Title = Translations.t("interface"),
-					Content = Translations.t("configLoader"),
-					SubContent = Translations.t("failedToLoadConfig") .. err,
+					Title = "Interface",
+					Content = "Config loader",
+					SubContent = "Failed to load config: " .. err,
 					Duration = 7
 				})
 			end
 
 			self.Library:Notify({
-				Title = Translations.t("interface"),
-				Content = Translations.t("configLoader"),
-				SubContent = string.format(Translations.t("loadedConfig"), name),
+				Title = "Interface",
+				Content = "Config loader",
+				SubContent = string.format("Loaded config %q", name),
 				Duration = 7
 			})
 		end})
 
-		section:AddButton({Title = Translations.t("overwriteConfig"), Callback = function()
+		section:AddButton({Title = "Overwrite config", Callback = function()
 			local name = SaveManager.Options.SaveManager_ConfigList.Value
 
 			local success, err = self:Save(name)
 			if not success then
 				return self.Library:Notify({
-					Title = Translations.t("interface"),
-					Content = Translations.t("configLoader"),
-					SubContent = Translations.t("failedToOverwrite") .. err,
+					Title = "Interface",
+					Content = "Config loader",
+					SubContent = "Failed to overwrite config: " .. err,
 					Duration = 7
 				})
 			end
 
 			self.Library:Notify({
-				Title = Translations.t("interface"),
-				Content = Translations.t("configLoader"),
-				SubContent = string.format(Translations.t("overwroteConfig"), name),
+				Title = "Interface",
+				Content = "Config loader",
+				SubContent = string.format("Overwrote config %q", name),
 				Duration = 7
 			})
 		end})
 
-		section:AddButton({Title = Translations.t("refreshList"), Callback = function()
+		section:AddButton({Title = "Refresh list", Callback = function()
 			SaveManager.Options.SaveManager_ConfigList:SetValues(self:RefreshConfigList())
 			SaveManager.Options.SaveManager_ConfigList:SetValue(nil)
 		end})
 
 		local AutoloadButton
-		AutoloadButton = section:AddButton({Title = Translations.t("setAutoLoad"), Description = Translations.t("currentAutoLoadNone"), Callback = function()
+		AutoloadButton = section:AddButton({Title = "Set as autoload", Description = "Current autoload config: none", Callback = function()
 			local name = SaveManager.Options.SaveManager_ConfigList.Value
 			writefile(self.Folder .. "/settings/autoload.txt", name)
-			AutoloadButton:SetDesc(Translations.t("currentAutoload") .. name)
+			AutoloadButton:SetDesc("Current autoload config: " .. name)
 			self.Library:Notify({
-				Title = Translations.t("interface"),
-				Content = Translations.t("configLoader"),
-				SubContent = string.format(Translations.t("setToAutoLoad"), name),
+				Title = "Interface",
+				Content = "Config loader",
+				SubContent = string.format("Set %q to auto load", name),
 				Duration = 7
 			})
 		end})
 
 		if isfile(self.Folder .. "/settings/autoload.txt") then
 			local name = readfile(self.Folder .. "/settings/autoload.txt")
-			AutoloadButton:SetDesc(Translations.t("currentAutoload") .. name)
+			AutoloadButton:SetDesc("Current autoload config: " .. name)
 		end
 
 		SaveManager:SetIgnoreIndexes({ "SaveManager_ConfigList", "SaveManager_ConfigName" })
