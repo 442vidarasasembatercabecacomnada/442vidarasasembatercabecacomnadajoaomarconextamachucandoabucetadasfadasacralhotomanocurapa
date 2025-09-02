@@ -152,13 +152,9 @@ return function(Tab, Fluent)
         local VIM = game:GetService("VirtualInputManager")
 
         local function PerformParryAction()
-            local keyEnum = Enum.KeyCode.F
-
-            VIM:SendKeyEvent(true, keyEnum, false, game)
-            VIM:SendKeyEvent(false, keyEnum, false, game)
+            VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+            VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
         end
-
-
 
         local function AutoParryLoop(deltaTime)
         if not scriptEnabled or deltaTime <= 0 then return end
@@ -603,86 +599,88 @@ end
         end
     })
 
+    -- Se NÃO for semi-suportado, roda o AutoCurve
+if not _G.SemiAllowedExecutors[_G.Executor] then
+
     local character = player.Character or player.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart")
 
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+    local RunService = game:GetService("RunService")
 
-local remote
-pcall(function()
-    remote = game:GetService("ReplicatedStorage"):FindFirstChild("ReplicateCamLook")
-end)
-local autocurveDirection = Translations.t("autoCurveOff")
+    local remote
+    pcall(function()
+        remote = ReplicatedStorage:FindFirstChild("ReplicateCamLook")
+    end)
 
-local hookEnabled = false
-local old; old = hookmetamethod(game, "__namecall", function(self, ...)
-    if self == remote and getnamecallmethod() == "FireServer" then
-        if hookEnabled then
-            if checkcaller() then
-                return old(self, ...)
-            else
-                return nil
+    local autocurveDirection = Translations.t("autoCurveOff")
+    local hookEnabled = false
+
+    local old; old = hookmetamethod(game, "__namecall", function(self, ...)
+        if self == remote and getnamecallmethod() == "FireServer" then
+            if hookEnabled then
+                if checkcaller() then
+                    return old(self, ...)
+                else
+                    return nil
+                end
             end
         end
+        return old(self, ...)
+    end)
+
+    local Dropdown = Tab:AddDropdown("autocurve", {
+        Title = Translations.t("autoCurveTitle"),
+        Values = {
+            Translations.t("autoCurveOff"),
+            Translations.t("autoCurveBehind"),
+            Translations.t("autoCurveRight"),
+            Translations.t("autoCurveLeft"),
+            Translations.t("autoCurveUP"),
+            Translations.t("autoCurveRandom")
+        },
+        Multi = false,
+        Default = 1,
+    })
+
+    Dropdown:SetValue(Translations.t("autoCurveOff"))
+    Dropdown:OnChanged(function(Value)
+        autocurveDirection = Value
+        hookEnabled = (autocurveDirection ~= Translations.t("autoCurveOff"))
+    end)
+
+    local function getCurveVector(direction)
+        local lookVector = rootPart.CFrame.LookVector
+        local x, y, z = lookVector.X, lookVector.Y, lookVector.Z
+
+        if direction == Translations.t("autoCurveBehind") then
+            x, y, z = -x, -y, -z
+        elseif direction == Translations.t("autoCurveRight") then
+            x, z = -z, x
+        elseif direction == Translations.t("autoCurveLeft") then
+            x, z = z, -x
+        elseif direction == Translations.t("autoCurveUP") then
+            y = y + 1
+        elseif direction == Translations.t("autoCurveRandom") then
+            local ang = math.rad(math.random(-180, 180))
+            local cos, sin = math.cos(ang), math.sin(ang)
+            x, z = x * cos - z * sin, x * sin + z * cos
+        end
+
+        return x, y, z
     end
-    return old(self, ...)
-end)
 
-local Dropdown = Tab:AddDropdown("autocurve", {
-    Title = Translations.t("autoCurveTitle"),
-    Values = {
-        Translations.t("autoCurveOff"),
-        Translations.t("autoCurveBehind"),
-        Translations.t("autoCurveRight"),
-        Translations.t("autoCurveLeft"),
-        Translations.t("autoCurveUP"),
-        Translations.t("autoCurveRandom")
-    },
-    Multi = false,
-    Default = 1,
-})
+    RunService.RenderStepped:Connect(function()
+        if autocurveDirection ~= Translations.t("autoCurveOff") then
+            local x, y, z = getCurveVector(autocurveDirection)
+            local id = tick()
+            remote:FireServer(x, y, z, id)
+        end
+    end)
 
-Dropdown:SetValue(Translations.t("autoCurveOff"))
-Dropdown:OnChanged(function(Value)
-    autocurveDirection = Value
-    -- Ativa ou desativa o hook dependendo da opção
-    hookEnabled = (autocurveDirection ~= Translations.t("autoCurveOff"))
-end)
-
--- Função que calcula o vetor modificado
-local function getCurveVector(direction)
-    local lookVector = rootPart.CFrame.LookVector
-    local x, y, z = lookVector.X, lookVector.Y, lookVector.Z
-
-    if direction == Translations.t("autoCurveBehind") then
-        x, y, z = -x, -y, -z
-    elseif direction == Translations.t("autoCurveRight") then
-        x, z = -z, x
-    elseif direction == Translations.t("autoCurveLeft") then
-        x, z = z, -x
-    elseif direction == Translations.t("autoCurveUP") then
-        y = y + 1
-    elseif direction == Translations.t("autoCurveRandom") then
-        local ang = math.rad(math.random(-180, 180))
-        local cos, sin = math.cos(ang), math.sin(ang)
-        x, z = x * cos - z * sin, x * sin + z * cos
-    end
-
-    return x, y, z
+else
+    warn(_G.Executor)
 end
-
--- Loop contínuo pra mandar o remote
-RunService.RenderStepped:Connect(function()
-    if autocurveDirection ~= Translations.t("autoCurveOff") then
-        local x, y, z = getCurveVector(autocurveDirection)
-        local id = tick()
-        remote:FireServer(x, y, z, id)
-    end
-end)
-
-
-
 
     -- ---------- Configs ----------
     local function getDefaultColor()
