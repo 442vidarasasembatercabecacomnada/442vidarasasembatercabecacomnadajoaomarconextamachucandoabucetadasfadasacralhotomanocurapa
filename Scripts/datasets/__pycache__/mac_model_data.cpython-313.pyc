@@ -27,7 +27,7 @@ return function(Tab, Fluent)
             end
         end
 
-        _G.exploitSupported = exploitSupported
+        local exploitSupported = not _G.SemiAllowedExecutors[_G.Executor]
 
         local warningMessage = exploitSupported
         and Translations.t("warningMessage")
@@ -38,7 +38,7 @@ return function(Tab, Fluent)
             Content = warningMessage
         })
 
-        if exploitSupported then
+        if not _G.SemiAllowedExecutors[_G.Executor] then
 
             _G.InfParryToggle = Tab:AddToggle("infparry", {
                 Title = Translations.t("infiniteParryTitle"),
