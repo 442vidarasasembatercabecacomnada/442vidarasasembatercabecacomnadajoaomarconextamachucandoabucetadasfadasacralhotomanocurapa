@@ -1,8 +1,6 @@
 --//---------------------------------------------------------------------------------------------------------------
 -- Farm
 
-local Translations = _G.Translations
-
 return function(Tab, Fluent)
 
     do
@@ -194,7 +192,7 @@ return function(Tab, Fluent)
 	    end})
 
 	Tab:AddSlider("HeightSlider", {
-        Title = Translations.t("farmHeightTitle"),
+        Title = "Height",
         Default = 350, 
         Min = 300, 
         Max = 380, 
@@ -214,7 +212,7 @@ return function(Tab, Fluent)
 
 	pcall(function() local sliderObj = Tab.Sections and Tab.Sections.AutoFarm and Tab.Sections.AutoFarm.Controls and Tab.Sections.AutoFarm.Controls.HeightSlider; if sliderObj and sliderObj.Value then currentFarmHeightY = math.floor(sliderObj.Value + 0.5) end end)
 
-	Tab:AddButton({ Title = Translations.t("reviveAll"), 
+	Tab:AddButton({ Title = "Revive all", 
         Callback = function()
 		local RevivePlayers = game:GetService("Players")
 		local ReviveWorkspace = game:GetService("Workspace")
