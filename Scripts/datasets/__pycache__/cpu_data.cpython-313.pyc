@@ -1,8 +1,6 @@
 --//---------------------------------------------------------------------------------------------------------------
 -- Visuals
 
-local Translations = _G.Translations
-
 return function(Tab, Fluent)
 
     do
@@ -28,7 +26,7 @@ return function(Tab, Fluent)
         end
 
         -- Cria lista para dropdown com "NoneOptions" no topo
-        local dropdownValues = { Translations.t("NoneOptions") }
+        local dropdownValues = {"None"}
         for _, name in ipairs(SwordData) do
             table.insert(dropdownValues, name)
         end
@@ -107,16 +105,16 @@ return function(Tab, Fluent)
         end
 
         -- UI
-        Tab:AddSection(Translations.t("sectionSwords"))
+        Tab:AddSection("Swords")
 
         Tab:AddDropdown("SwordSelector", {
-            Title = Translations.t("swordSelect"),
+            Title = "Select sword",
             Values = dropdownValues,
-            Default = Translations.t("NoneOptions"),
+            Default = "None",
             Callback = function(Value)
                 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 
-                if Value == Translations.t("NoneOptions") then
+                if Value == "None" then
                     -- Remove custom e devolve original
                     local existingSword = character:FindFirstChild("Sword")
                     if existingSword then existingSword:Destroy() end
@@ -204,15 +202,15 @@ return function(Tab, Fluent)
             end
         end
 
-        local auraOptions = {Translations.t("NoneOptions")}
+        local auraOptions = {"None"}
         for _, aura in ipairs(auraList) do
             table.insert(auraOptions, aura.Name)
         end
 
         Tab:AddDropdown("AuraSelector", {
-            Title = Translations.t("selectAura"),
+            Title = "Select aura",
             Values = auraOptions,
-            Default = Translations.t("NoneOptions"),
+            Default = "None",
             Callback = function(selected)
                 if currentAuraFolder then
                     for _, child in ipairs(currentAuraFolder:GetChildren()) do
@@ -223,7 +221,7 @@ return function(Tab, Fluent)
                     currentAuraFolder:Destroy()
                 end
 
-                if selected == Translations.t("NoneOptions") then
+                if selected == "None" then
                     currentAuraFolder = nil
                     return
                 end
@@ -287,11 +285,11 @@ return function(Tab, Fluent)
             end
         })
 
-        Tab:AddSection(Translations.t("sectionPoses"))
+        Tab:AddSection("Poses")
 
         local SheetItemData = require(ReplicatedStorage.DataBins.ItemData:FindFirstChild("SheetItemData"))
 
-        local AnimData = {Translations.t("NoneOptions")}
+        local AnimData = {NoneOptions = "None",}
         for key, item in SheetItemData do
 	        if item.Category == "Pose" and item.DisplayName then
 		        table.insert(AnimData, item.DisplayName)
@@ -308,9 +306,9 @@ return function(Tab, Fluent)
         end
 
         Tab:AddDropdown("AnimChanger", {
-	        Title = Translations.t("selectPose"),
+	        Title = "Select pose",
 	        Values = AnimData,
-	        Default = AnimData[1] or Translations.t("NoneOptions"),
+	        Default = AnimData[1] or "None",
 	        Callback = function(Value)
 		        local player = game.Players.LocalPlayer
 		        local character = player.Character or player.CharacterAdded:Wait()
@@ -318,7 +316,7 @@ return function(Tab, Fluent)
 
 		        local animationId
 
-		        if Value == Translations.t("NoneOptions") then
+		        if Value == "None" then
 			        animationId = "0"
 		        else
 			        local usageData = getPoseUsageDataByDisplayName(Value)
@@ -421,10 +419,10 @@ return function(Tab, Fluent)
             }
         }
 
-        local skyboxOptions = {Translations.t("NoneOptions")}
+        local skyboxOptions = {"None"}
         for n, _ in pairs(SKYBOXES) do table.insert(skyboxOptions, n) end
 
-        local selectedSkybox = Translations.t("NoneOptions")
+        local selectedSkybox = "None"
         local skyboxLoopConnection = nil
 
         local function applySkybox(skyboxName)
@@ -460,7 +458,7 @@ return function(Tab, Fluent)
             if skyboxLoopConnection then
                 skyboxLoopConnection:Disconnect()
             end
-            if selectedSkybox == Translations.t("NoneOptions") then return end
+            if selectedSkybox == "None" then return end
             skyboxLoopConnection = game:GetService("RunService").Heartbeat:Connect(function()
                 applySkybox(selectedSkybox)
             end)
@@ -484,11 +482,11 @@ return function(Tab, Fluent)
         Tab:AddSection("Skybox")
 
         Tab:AddDropdown("SkyboxSelector", {
-            Title = Translations.t("selectSkybox"), Values = skyboxOptions, Default = Translations.t("NoneOptions"),
+            Title = "Select Skybox", Values = skyboxOptions, Default = "None",
             Callback = function(Value)
                 selectedSkybox = Value
                 stopSkyboxLoop()
-                if Value == Translations.t("NoneOptions") then
+                if Value == "None" then
                     resetToDefaultSkybox()
                 else
                     startSkyboxLoop()
