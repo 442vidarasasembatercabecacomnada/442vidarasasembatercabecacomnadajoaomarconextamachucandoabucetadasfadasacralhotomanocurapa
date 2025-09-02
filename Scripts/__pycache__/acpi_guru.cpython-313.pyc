@@ -18,8 +18,6 @@ local Button_Icon = ""
 local Show_Search = true
 -------------------------
 
-local Translations = _G.Translations
-
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
@@ -3161,7 +3159,7 @@ Components.Window = (function()
 		local SearchTextbox = Components.Textbox(SearchFrame, true)
 		SearchTextbox.Frame.Size = UDim2.new(1, -44, 1, -8)
 		SearchTextbox.Frame.Position = UDim2.new(0, 10, 0, 4)
-		SearchTextbox.Input.PlaceholderText = Translations.t("search")
+		SearchTextbox.Input.PlaceholderText = "Search..."
 		SearchTextbox.Input.Text = ""
 
 		local SearchIcon = New("ImageLabel", {
