@@ -1,8 +1,6 @@
 --//---------------------------------------------------------------------------------------------------------------
 -- Binds
 
-local Translations = _G.Translations
-
 return function(Tab, Fluent)
 
     do
