@@ -1,8 +1,6 @@
 --//---------------------------------------------------------------------------------------------------------------
 -- Main
 
-local Translations = _G.Translations
-
 return function(Tab, Fluent)
     local Options = Fluent.Options
 
@@ -348,12 +346,12 @@ return function(Tab, Fluent)
     end
 
     Tab:AddParagraph({
-        Title = Translations.t("mainParagraph") .. player.Name,
-        Content = Translations.t("mainParagraphContent") .. tostring(_G.LICENSE_EXPIRATION or "N/A"),
+        Title = "Hello, " .. player.Name,
+        Content = "License valid until: " .. tostring(_G.LicenseExpiryText or "N/A"),
     })
 
     _G.AutoParryToggle = Tab:AddToggle("AutoParry", {
-        Title = Translations.t("autoParryTitle"),
+        Title = "Auto parry",
         Default = true,
         Callback = function(Value)
             scriptEnabled = Value
@@ -378,8 +376,8 @@ return function(Tab, Fluent)
     })
     
     Tab:AddSlider("PingComp", {
-        Title = Translations.t("pingCompTitle"),
-        Description = Translations.t("pingCompDesc"),
+        Title = "Ping compensator",
+        Description = "Adjust according to your ms.",
         Default = 0.08,
         Min = 0.01,
         Max = 0.2,
@@ -410,7 +408,7 @@ return function(Tab, Fluent)
     end
 
     Tab:AddToggle("PingBased", {
-        Title = Translations.t("pingBasedTitle"),
+        Title = "Ping based",
         Default = true,
         Callback = function(value)
             pingBased = value
@@ -592,7 +590,7 @@ end
     end)
 
     _G.AutoAbilityToggle = Tab:AddToggle("autoability", {
-        Title = Translations.t("autoAbilityTitle"),
+        Title = "Auto ability",
         Default = true,
         Callback = function(Value)
             autoAbilityEnabled = Value
@@ -613,7 +611,7 @@ if not _G.SemiAllowedExecutors[_G.Executor] then
         remote = ReplicatedStorage:FindFirstChild("ReplicateCamLook")
     end)
 
-    local autocurveDirection = Translations.t("autoCurveOff")
+    local autocurveDirection = "Off"
     local hookEnabled = false
 
     local old; old = hookmetamethod(game, "__namecall", function(self, ...)
@@ -630,38 +628,38 @@ if not _G.SemiAllowedExecutors[_G.Executor] then
     end)
 
     local Dropdown = Tab:AddDropdown("autocurve", {
-        Title = Translations.t("autoCurveTitle"),
+        Title = "Auto curve",
         Values = {
-            Translations.t("autoCurveOff"),
-            Translations.t("autoCurveBehind"),
-            Translations.t("autoCurveRight"),
-            Translations.t("autoCurveLeft"),
-            Translations.t("autoCurveUP"),
-            Translations.t("autoCurveRandom")
+            "Off",
+            "Behind",
+            "Right",
+            "Left",
+            "Up",
+            autoCurveRandom = "Random"
         },
         Multi = false,
         Default = 1,
     })
 
-    Dropdown:SetValue(Translations.t("autoCurveOff"))
+    Dropdown:SetValue("Off")
     Dropdown:OnChanged(function(Value)
         autocurveDirection = Value
-        hookEnabled = (autocurveDirection ~= Translations.t("autoCurveOff"))
+        hookEnabled = (autocurveDirection ~= "Off")
     end)
 
     local function getCurveVector(direction)
         local lookVector = rootPart.CFrame.LookVector
         local x, y, z = lookVector.X, lookVector.Y, lookVector.Z
 
-        if direction == Translations.t("autoCurveBehind") then
+        if direction == "Behind" then
             x, y, z = -x, -y, -z
-        elseif direction == Translations.t("autoCurveRight") then
+        elseif direction == "Right" then
             x, z = -z, x
-        elseif direction == Translations.t("autoCurveLeft") then
+        elseif direction == "Left" then
             x, z = z, -x
-        elseif direction == Translations.t("autoCurveUP") then
+        elseif direction == "Up" then
             y = y + 1
-        elseif direction == Translations.t("autoCurveRandom") then
+        elseif direction == "Random" then
             local ang = math.rad(math.random(-180, 180))
             local cos, sin = math.cos(ang), math.sin(ang)
             x, z = x * cos - z * sin, x * sin + z * cos
@@ -671,7 +669,7 @@ if not _G.SemiAllowedExecutors[_G.Executor] then
     end
 
     RunService.RenderStepped:Connect(function()
-        if autocurveDirection ~= Translations.t("autoCurveOff") then
+        if autocurveDirection ~= "Off" then
             local x, y, z = getCurveVector(autocurveDirection)
             local id = tick()
             remote:FireServer(x, y, z, id)
@@ -701,7 +699,7 @@ end
 
     -- ---------- ColorPicker ----------
     local TargetColor = Tab:AddColorpicker("TargetColor", {
-        Title = Translations.t("targetColor"),
+        Title = "Target color",
         Default = defaultColor
     })
 
@@ -943,7 +941,7 @@ end
     end)
 
     Tab:AddToggle("AutoReady", {
-        Title = Translations.t("autoReadyTitle"),
+        Title = "Auto ready",
         Default = false,
         Callback = function(Value)
             local player = game.Players.LocalPlayer
@@ -1015,7 +1013,7 @@ end)
     local originalSize = readyZone and readyZone.Size
 
     Tab:AddToggle("AlwaysReady", {
-        Title = Translations.t("alwaysReady"),
+        Title = "Always ready",
         Default = false,
         Callback = function(state)
             if readyZone and readyZone:IsA("BasePart") then
@@ -1273,7 +1271,7 @@ Tab:AddToggle("ESPLife", {
         end)
     
         Tab:AddSlider("MaxZoom", {
-            Title = Translations.t("maxZoom"),
+            Title = "Max zoom",
             Default = 45,
             Min = 45,
             Max = 200,
