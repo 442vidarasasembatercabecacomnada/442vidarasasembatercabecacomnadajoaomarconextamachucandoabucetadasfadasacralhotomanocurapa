@@ -1,8 +1,6 @@
 --//---------------------------------------------------------------------------------------------------------------
 -- Rage
 
-local Translations = _G.Translations
-
 return function(Tab, Fluent)
 
     do
@@ -30,18 +28,18 @@ return function(Tab, Fluent)
         local exploitSupported = not _G.SemiAllowedExecutors[_G.Executor]
 
         local warningMessage = exploitSupported
-        and Translations.t("warningMessage")
-        or Translations.t("exploitSupported")
+        and "These features carry a high risk of ban."
+        or "Your exploit is not supported."
 
         Tab:AddParagraph({
-            Title = Translations.t("warningTitle"),
+            Title = "Warning",
             Content = warningMessage
         })
 
         if not _G.SemiAllowedExecutors[_G.Executor] then
 
             _G.InfParryToggle = Tab:AddToggle("infparry", {
-                Title = Translations.t("infiniteParryTitle"),
+                Title = "Infinite parry",
                 Default = false,
                 Callback = function(state)
                     for _, func in ipairs(getGc()) do
@@ -57,7 +55,7 @@ return function(Tab, Fluent)
             })
 
             Tab:AddToggle("InfiniteDash", {
-                Title = Translations.t("infiniteDashTitle"),
+                Title = "Infinite dash",
                 Default = false,
                 Callback = function(state)
                     for _, func in ipairs(getGc()) do
@@ -73,7 +71,7 @@ return function(Tab, Fluent)
             })
 
             Tab:AddToggle("nodashcool", {
-                Title = Translations.t("noDashCooldownTitle"),
+                Title = "No dash cooldown",
                 Default = false,
                 Callback = function(state)
                     for _, func in ipairs(getGc()) do
@@ -95,7 +93,7 @@ return function(Tab, Fluent)
             local updateThread
 
             Tab:AddSlider("DashPower", {
-                Title = Translations.t("dashPoweTitle"),
+                Title = "Dash power",
                 Default = dashPowerValue,
                 Min = 40,
                 Max = 200,
@@ -123,7 +121,7 @@ return function(Tab, Fluent)
             })
 
             Tab:AddToggle("infjump", {
-                Title = Translations.t("infiniteJumpTitle"),
+                Title = "Infinite jump",
                 Default = false,
                 Callback = function(state)
                 for _, func in ipairs(getGc()) do
