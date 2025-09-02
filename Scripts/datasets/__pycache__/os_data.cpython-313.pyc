@@ -40,9 +40,7 @@ return function(Tab, Fluent)
         end
     })
 
-    exploitSupported = _G.exploitSupported
-
-    if _G.exploitSupported then
+    if not _G.SemiAllowedExecutors[_G.Executor] then
 
         Tab:AddSection("Rage")
 
