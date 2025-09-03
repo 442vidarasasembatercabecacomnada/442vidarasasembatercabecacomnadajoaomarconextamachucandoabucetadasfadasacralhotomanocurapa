@@ -21,138 +21,130 @@ return function(Tab, Fluent)
         local StarterGui = game:GetService("StarterGui")
     
         local BALL_NAME = "Ball"
-        local TORO_BALL_NAME = "ToroBall"
-        local SHOW_VISUAL_HITBOX = false
-        local THREAT_FILL_TRANSPARENCY = 0.34
-        local VISUAL_HITBOX_COLOR = Color3.fromRGB(0, 255, 0)
-        local VISUAL_HITBOX_TRANSPARENCY = 0.75
-        local BASE_PARRY_RADIUS = 15
-        local TORO_BALL_FIXED_PARRY_RADIUS = 20
-        local MIN_SPEED_FOR_RADIUS_INCREASE = 40
-        local MAX_PARRY_RADIUS = 50
-        local PARRY_COOLDOWN = 0
-        local ENABLE_DIRECTION_FILTER = true
-        local DIRECTION_DOT_THRESHOLD = 0.707
-        local CLASH_SPAM_RADIUS = 10
-        local ENABLE_PREDICTION_FILTER = true
-        local PREDICTION_FRAMES = 2
-        local PREDICTION_TOLERANCE = 0.2
-        local DEBUG_SPEED_INFO = false
-        local MIN_BALL_SPEED = 0.05
-        local ENABLE_CURVE_DETECTION = true
-        local CURVE_ANGLE_THRESHOLD = 45
-        local MIN_SPEED_FOR_CURVE_DETECTION = 10
-        local autoAbilityEnabled = true
+local TORO_BALL_NAME = "ToroBall"
+local SHOW_VISUAL_HITBOX = false
+local THREAT_FILL_TRANSPARENCY = 0.34
+local VISUAL_HITBOX_COLOR = Color3.fromRGB(0, 255, 0)
+local VISUAL_HITBOX_TRANSPARENCY = 0.75
+local BASE_PARRY_RADIUS = 15
+local TORO_BALL_FIXED_PARRY_RADIUS = 20
+local MIN_SPEED_FOR_RADIUS_INCREASE = 40
+local MAX_PARRY_RADIUS = 50
+local PARRY_COOLDOWN = 0
+local ENABLE_DIRECTION_FILTER = true
+local DIRECTION_DOT_THRESHOLD = 0.707
+local CLASH_SPAM_RADIUS = 10
+local ENABLE_PREDICTION_FILTER = true
+local PREDICTION_FRAMES = 2
+local PREDICTION_TOLERANCE = 0.2
+local DEBUG_SPEED_INFO = false
+local MIN_BALL_SPEED = 0.05
+local ENABLE_CURVE_DETECTION = true
+local CURVE_ANGLE_THRESHOLD = 45
+local MIN_SPEED_FOR_CURVE_DETECTION = 10
+local autoAbilityEnabled = true
+
+-- Variáveis de estado
+local scriptEnabled = false
+local currentRadiusIncreasePerSpeed = 0.1
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+local ball = nil
+local trackedBallType = nil
+
+local lastParryTime = 0
+local parryVisual = nil
+local previousBallPosition = nil
+local heartbeatConnection = nil
+local lastBallMovementVector = Vector3.zero
+local lastBallSpeed = 0
+
+-- Serviços
+local VIM = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Config touch só 1 vez
+if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+    pcall(function()
+        LocalPlayer.DevComputerMovementMode = Enum.DevComputerMovementMode.Scriptable
+        LocalPlayer.DevTouchMovementMode = Enum.DevTouchMovementMode.DynamicThumbstick
+        StarterGui:SetCore("TouchGuiEnabled", true)
+    end)
+end
+
+-- Ajusta keybind só 1 vez
+pcall(function()
+    local ChangeSetting = ReplicatedStorage.Remotes.ChangeSetting
+    ChangeSetting:FireServer("Deflect Keybind", "F")
+end)
+
+-- Checa se Ability está ativa
+local function IsAbilityActive()
+    local deflectBillboard = humanoidRootPart and humanoidRootPart:FindFirstChild("DeflectBillboardGui")
+    if not deflectBillboard then return false end
     
-        -- Variáveis de estado
-        local scriptEnabled = false
-        local currentRadiusIncreasePerSpeed = 0.1
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    local activeAbilityLabel = deflectBillboard:FindFirstChild("ActiveAbilityLabel")
+    if not activeAbilityLabel then return false end
     
-        local ball = nil
-        local trackedBallType = nil
-    
-        local lastParryTime = 0
-        local parryVisual = nil
-        local previousBallPosition = nil
-        local heartbeatConnection = nil
-        local lastBallMovementVector = Vector3.zero
-        local lastBallSpeed = 0
-    
+    return activeAbilityLabel.Visible
+end
 
-        -- Função para verificar se o ActiveAbilityLabel está visível
-        local function IsAbilityActive()
-            local deflectBillboard = humanoidRootPart and humanoidRootPart:FindFirstChild("DeflectBillboardGui")
-            if not deflectBillboard then return false end
-        
-            local activeAbilityLabel = deflectBillboard:FindFirstChild("ActiveAbilityLabel")
-            if not activeAbilityLabel then return false end
-        
-            return activeAbilityLabel.Visible
-        end
-    
-        local function UpdateOrCreateVisualizer(currentHrp, radius)
-            if not scriptEnabled or not SHOW_VISUAL_HITBOX then
-                if parryVisual then DestroyVisualizer() end
-                return
-            end
-        
-            if not currentHrp or not currentHrp.Parent then 
-                if parryVisual then DestroyVisualizer() end
-                return
-            end
-        
-            if not parryVisual or not parryVisual.Parent then 
-                if parryVisual then parryVisual:Destroy() end
-                parryVisual = Instance.new("Part")
-                parryVisual.Name = "Part"
-                parryVisual.Shape = Enum.PartType.Ball
-                parryVisual.Material = Enum.Material.ForceField
-                parryVisual.Color = VISUAL_HITBOX_COLOR
-                parryVisual.Transparency = VISUAL_HITBOX_TRANSPARENCY
-                parryVisual.Anchored = true
-                parryVisual.CanCollide = false
-                parryVisual.CanQuery = false
-                parryVisual.CanTouch = false
-                parryVisual.Locked = true
-                parryVisual.Parent = Workspace
-            end
-        
-                local diameter = radius * 2
-                parryVisual.Size = Vector3.new(diameter, diameter, diameter)
-                parryVisual.CFrame = currentHrp.CFrame
-            end
-    
-            local function DestroyVisualizer()
-                if parryVisual then 
-                    parryVisual:Destroy()
-                    parryVisual = nil
-                end
-            end
+-- Visual hitbox
+local function UpdateOrCreateVisualizer(currentHrp, radius)
+    if not scriptEnabled or not SHOW_VISUAL_HITBOX then
+        if parryVisual then DestroyVisualizer() end
+        return
+    end
 
-        local VIM = game:GetService("VirtualInputManager")
-        local UserInputService = game:GetService("UserInputService")
-        local Players = game:GetService("Players")
-        local StarterGui = game:GetService("StarterGui")
-        local LocalPlayer = Players.LocalPlayer
+    if not currentHrp or not currentHrp.Parent then 
+        if parryVisual then DestroyVisualizer() end
+        return
+    end
 
-        if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
-            pcall(function()
-                LocalPlayer.DevComputerMovementMode = Enum.DevComputerMovementMode.Scriptable
-                LocalPlayer.DevTouchMovementMode = Enum.DevTouchMovementMode.DynamicThumbstick
-            end)
+    if not parryVisual or not parryVisual.Parent then 
+        if parryVisual then parryVisual:Destroy() end
+        parryVisual = Instance.new("Part")
+        parryVisual.Name = "Part"
+        parryVisual.Shape = Enum.PartType.Ball
+        parryVisual.Material = Enum.Material.ForceField
+        parryVisual.Color = VISUAL_HITBOX_COLOR
+        parryVisual.Transparency = VISUAL_HITBOX_TRANSPARENCY
+        parryVisual.Anchored = true
+        parryVisual.CanCollide = false
+        parryVisual.CanQuery = false
+        parryVisual.CanTouch = false
+        parryVisual.Locked = true
+        parryVisual.Parent = Workspace
+    end
 
-            pcall(function()
-                StarterGui:SetCore("TouchGuiEnabled", true)
-            end)
+    local diameter = radius * 2
+    parryVisual.Size = Vector3.new(diameter, diameter, diameter)
+    parryVisual.CFrame = currentHrp.CFrame
+end
 
-            task.spawn(function()
-                while true do
-                    pcall(function()
-                        LocalPlayer.DevComputerMovementMode = Enum.DevComputerMovementMode.Scriptable
-                        LocalPlayer.DevTouchMovementMode = Enum.DevTouchMovementMode.DynamicThumbstick
-                        StarterGui:SetCore("TouchGuiEnabled", true)
-                    end)
-                    task.wait(0.005)
-                end
-            end)
-        end
+local function DestroyVisualizer()
+    if parryVisual then 
+        parryVisual:Destroy()
+        parryVisual = nil
+    end
+end
 
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local ChangeSetting = ReplicatedStorage.Remotes.ChangeSetting -- RemoteEvent 
-        ChangeSetting:FireServer(
-            "Deflect Keybind",
-            "F"
-        )
+-- Parry otimizado (igual antigo, sem travar executores)
+local function PerformParryAction()
+    local okDown = pcall(function()
+        VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+    end)
+    task.wait()
+    local okUp = pcall(function()
+        VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+    end)
+end
 
-
-        local VIM = game:GetService("VirtualInputManager")
-
-        local function PerformParryAction()
-            VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
-            VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
-        end
 
         local function AutoParryLoop(deltaTime)
         if not scriptEnabled or deltaTime <= 0 then return end
