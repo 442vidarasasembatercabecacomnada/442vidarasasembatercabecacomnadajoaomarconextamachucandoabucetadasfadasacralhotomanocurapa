@@ -77,12 +77,6 @@ if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
     end)
 end
 
--- Ajusta keybind só 1 vez
-pcall(function()
-    local ChangeSetting = ReplicatedStorage.Remotes.ChangeSetting
-    ChangeSetting:FireServer("Deflect Keybind", "F")
-end)
-
 -- Checa se Ability está ativa
 local function IsAbilityActive()
     local deflectBillboard = humanoidRootPart and humanoidRootPart:FindFirstChild("DeflectBillboardGui")
@@ -134,15 +128,21 @@ local function DestroyVisualizer()
     end
 end
 
--- Parry otimizado (igual antigo, sem travar executores)
 local function PerformParryAction()
-    local okDown = pcall(function()
-        VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-    end)
-    task.wait()
-    local okUp = pcall(function()
-        VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-    end)
+	local camera = workspace.CurrentCamera
+	local screenSize = camera.ViewportSize
+	local x, y = screenSize.X - 1, screenSize.Y - 1
+
+	if tick() - lastParryTime < PARRY_COOLDOWN then return end
+	lastParryTime = tick()
+
+	pcall(function()
+		VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+	end)
+	task.wait()
+	pcall(function()
+		VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+	end)
 end
 
 
@@ -378,49 +378,6 @@ end
             currentRadiusIncreasePerSpeed = value
         end
     })
-
-    local pingBased = true
-
-    -- Função para pegar ping do player via PingLabel
-    local function getPing()
-        local success, pingText = pcall(function()
-            local label = player.PlayerGui:FindFirstChild("HUD")
-                            :FindFirstChild("HolderLeftBottom")
-                            :FindFirstChild("ServerStatistics")
-                            :FindFirstChild("PingLabel")
-            return label.Text
-        end)
-    
-        if success and pingText then
-            local pingNumber = tonumber(pingText:match("(%d+)"))
-            return pingNumber or 0
-        end
-    
-        return 0
-    end
-
-    Tab:AddToggle("PingBased", {
-        Title = "Ping based",
-        Default = true,
-        Callback = function(value)
-            pingBased = value
-            if pingBased then
-                local ping = getPing()
-                currentRadiusIncreasePerSpeed = ping / 1000
-            end
-        end
-    })
-
-    -- Loop leve para atualizar automaticamente
-    spawn(function()
-        while true do
-            if pingBased then
-                local ping = getPing()
-                currentRadiusIncreasePerSpeed = ping / 1000
-            end
-            wait(0.1)
-        end
-    end)
 
     -- Detecta se é celular ou PC
     local isMobile = GuiService:IsTenFootInterface() or UserInputService.TouchEnabled
@@ -1017,226 +974,6 @@ end)
             end
         end
     })
-
-    local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-
-local LocalPlayer = Players.LocalPlayer
-
--- CONFIG
-local MAX_DISTANCE = 5000
-local TEXT_SIZE = 24
-local TEXT_OFFSET = Vector3.new(0, 2.5, 0)
-
--- LOBBY
-local LobbyBuild
-pcall(function()
-    local lobby = Workspace:FindFirstChild("Lobby")
-    if lobby then
-        local build1 = lobby:FindFirstChild("Build")
-        if build1 then
-            LobbyBuild = build1:FindFirstChild("Build")
-        end
-    end
-end)
-
--- CONTROLE
-local ESPEnabled = false
-local ESPConnections = {}
-local ESPBillboards = {}
-
--- Limpar ESPs
-local function clearESP()
-    for _, bb in pairs(ESPBillboards) do
-        if bb and bb.Parent then
-            bb:Destroy()
-        end
-    end
-    ESPBillboards = {}
-
-    for _, con in pairs(ESPConnections) do
-        if con then con:Disconnect() end
-    end
-    ESPConnections = {}
-end
-
--- Traduz cores em corações
-local function getHeartsByColor(r, g, b)
-    if r == 38 and g == 255 and b == 0 then
-        return "♥♥♥", Color3.fromRGB(0, 255, 0)
-    elseif r == 183 and g == 250 and b == 0 then
-        return "♥♥", Color3.fromRGB(183, 250, 0)
-    elseif r == 255 and g == 165 and b == 1 then
-        return "♥", Color3.fromRGB(255, 165, 0)
-    elseif r == 255 and g == 0 and b == 4 then
-        return "☠", Color3.fromRGB(255, 0, 0)
-    else
-        return "", Color3.fromRGB(255, 255, 255)
-    end
-end
-
--- Verifica se HRP está dentro do Lobby
-local function isInsideLobby(hrp)
-    if not hrp or not LobbyBuild then return false end
-    local pos = hrp.Position
-
-    for _, part in pairs(LobbyBuild:GetDescendants()) do
-        if part:IsA("BasePart") then
-            local size = part.Size / 2
-            local cf = part.CFrame
-            if pos.X >= (cf.Position.X - size.X) and pos.X <= (cf.Position.X + size.X) and
-               pos.Y >= (cf.Position.Y - size.Y) and pos.Y <= (cf.Position.Y + size.Y) and
-               pos.Z >= (cf.Position.Z - size.Z) and pos.Z <= (cf.Position.Z + size.Z) then
-                return true
-            end
-        end
-    end
-    return false
-end
-
-local function createESP(player)
-    if not ESPEnabled then return end
-    if not player.Character then return end
-
-    local head = player.Character:FindFirstChild("Head")
-    if not head then return end
-
-    local old = head:FindFirstChild("HealthTag_"..player.Name)
-    if old then old:Destroy() end
-
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "HealthTag_"..player.Name
-    billboard.Adornee = head
-    billboard.Size = UDim2.new(4, 0, 2, 0)
-    billboard.StudsOffset = TEXT_OFFSET
-    billboard.AlwaysOnTop = true
-    billboard.MaxDistance = MAX_DISTANCE
-    billboard.Enabled = false -- começa desativado
-    billboard.Parent = head
-    table.insert(ESPBillboards, billboard)
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1,0,1,0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = ""
-    textLabel.Font = Enum.Font.SourceSansBold
-    textLabel.TextSize = TEXT_SIZE
-    textLabel.TextColor3 = Color3.new(1,1,1)
-    textLabel.TextStrokeTransparency = 0.5
-    textLabel.TextStrokeColor3 = Color3.new(0,0,0)
-    textLabel.Parent = billboard
-
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
-        if not ESPEnabled then
-            billboard.Enabled = false
-            return
-        end
-
-        if not LocalPlayer:GetAttribute("IsInGame") then
-            billboard.Enabled = false
-            return
-        end
-
-        if not player.Character or not head:IsDescendantOf(workspace) then
-            billboard:Destroy()
-            if connection then connection:Disconnect() end
-            return
-        end
-
-        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-        if hrp and isInsideLobby(hrp) then
-            -- player dentro do Lobby → desliga ESP
-            billboard.Enabled = false
-            return
-        end
-
-        -- só mostra se estiver fora do Lobby
-        local billboardPath = head:FindFirstChild("PlayerBillboard")
-        local bar = billboardPath and billboardPath:FindFirstChild("Bar")
-        local inner = bar and bar:FindFirstChild("Inner")
-        if not inner then
-            billboard.Enabled = false
-            return
-        end
-
-        local color = inner.BackgroundColor3
-        local r,g,b = math.round(color.R*255), math.round(color.G*255), math.round(color.B*255)
-        local hearts, textColor = getHeartsByColor(r,g,b)
-
-        if hearts ~= "" then
-            billboard.Enabled = true
-            textLabel.Text = hearts
-            textLabel.TextColor3 = textColor
-        else
-            billboard.Enabled = false
-        end
-    end)
-
-    table.insert(ESPConnections, connection)
-
-    player.CharacterAdded:Connect(function()
-        task.wait(1)
-        createESP(player)
-    end)
-end
-
-
--- Configura players existentes + novos
-local function setupAllPlayers()
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            if plr.Character then
-                createESP(plr)
-            end
-            plr.CharacterAdded:Connect(function()
-                task.wait(1)
-                createESP(plr)
-            end)
-        end
-    end
-
-    Players.PlayerAdded:Connect(function(plr)
-        if plr ~= LocalPlayer then
-            plr.CharacterAdded:Connect(function()
-                task.wait(1)
-                createESP(plr)
-            end)
-            if plr.Character then
-                createESP(plr)
-            end
-        end
-    end)
-
-    Players.PlayerRemoving:Connect(function(plr)
-        if plr.Character and plr.Character:FindFirstChild("Head") then
-            local head = plr.Character.Head
-            local tag = head:FindFirstChild("HealthTag_"..plr.Name)
-            if tag then tag:Destroy() end
-        end
-    end)
-end
-
--- Ativa/Desativa
-local function toggleESP(value)
-    ESPEnabled = value
-    if ESPEnabled then
-        setupAllPlayers()
-    else
-        clearESP()
-    end
-end
-
--- Exemplo de toggle na Tab
-Tab:AddToggle("ESPLife", {
-    Title = "ESP Life",
-    Default = false,
-    Callback = function(value)
-        toggleESP(value)
-    end
-})
-
 
         local camera = workspace.CurrentCamera
         local fovInicialPadrao = camera and math.clamp(camera.FieldOfView, 70, 120) or 70
