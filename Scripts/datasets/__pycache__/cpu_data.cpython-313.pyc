@@ -288,7 +288,6 @@ return function(Tab, Fluent)
         Tab:AddSection("Poses")
 
         local SheetItemData = require(ReplicatedStorage.DataBins.ItemData:FindFirstChild("SheetItemData"))
-
         local AnimData = {NoneOptions = "None",}
         for key, item in SheetItemData do
 	        if item.Category == "Pose" and item.DisplayName then
@@ -364,6 +363,369 @@ return function(Tab, Fluent)
 	        end
         })
 
+
+
+        local Players = game:GetService("Players")
+        local StarterPlayerScripts = game:GetService("StarterPlayer").StarterPlayerScripts
+        local Workspace = game:GetService("Workspace")
+        local Debris = game:GetService("Debris")
+        local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Lista de enchants disponíveis (sons)
+local EnchantList = {
+    Wind = "rbxassetid://15567866091",
+    Redfang = "rbxassetid://77632169477634",   -- coloca os ids reais
+    Prism = "rbxassetid://89705007736184",
+    Poison = "rbxassetid://00000000003",
+    Galaxy = "rbxassetid://00000000004",
+    Frost = "rbxassetid://15567865708",
+    Flame = "rbxassetid://15567865933",
+    Electric = "rbxassetid://15567866886",
+    Cherryblow = "rbxassetid://127448611717256",
+    Claws = "rbxassetid://75672020501476"
+}
+
+-- Dropdown values (primeiro None)
+local dropdownValues = {"None"}
+for enchantName in pairs(EnchantList) do
+    table.insert(dropdownValues, enchantName)
+end
+
+-- Função para tocar som
+local function tocarSom(soundId)
+    if not soundId then return end
+    local sound = Instance.new("Sound")
+    sound.SoundId = soundId
+    sound.Volume = 1
+    sound.Looped = false
+    sound.Parent = character:WaitForChild("Head")
+    sound:Play()
+end
+
+-- Função recursiva para emitir efeitos
+local function emitEffects(parent)
+    for _, child in ipairs(parent:GetChildren()) do
+        if child:IsA("Beam") then
+            child.Enabled = true
+        elseif child:IsA("ParticleEmitter") then
+            local count = child:GetAttribute("EmitCount") or 10
+            local delayTime = child:GetAttribute("EmitDelay") or 0
+            task.delay(delayTime, function()
+                child:Emit(count)
+            end)
+        elseif #child:GetChildren() > 0 then
+            emitEffects(child)
+        end
+    end
+end
+
+-- Função especial para Claws
+local function dispararClaws(clawsModule)
+    local FXContainer = Workspace:FindFirstChild("LocalFX") or Instance.new("Folder")
+    FXContainer.Name = "LocalFX"
+    FXContainer.Parent = Workspace
+
+    -- SlashModel
+    local slashModel = clawsModule:WaitForChild("SlashModel"):Clone()
+    slashModel.Parent = FXContainer
+
+    local partConfigs = {
+        SlashPart1 = {offset = Vector3.new(0, 2, 0), rotation = CFrame.Angles(0, 0, math.rad(80))},
+        SlashPart2 = {offset = Vector3.new(0, 0, 0), rotation = CFrame.Angles(0, 0, math.rad(80))},
+        SlashPart3 = {offset = Vector3.new(0, -2, 0), rotation = CFrame.Angles(0, 0, math.rad(80))}
+    }
+
+    for partName, _ in pairs(partConfigs) do
+        local part = slashModel:FindFirstChild(partName)
+        if part then
+            emitEffects(part)
+        end
+    end
+
+    local beams = {}
+    for _, beam in ipairs(slashModel:GetDescendants()) do
+        if beam:IsA("Beam") then
+            table.insert(beams, beam)
+        end
+    end
+
+    -- Part "1"
+    local part1 = clawsModule:WaitForChild("1"):Clone()
+    part1.Parent = FXContainer
+    part1.Transparency = 1
+    part1.CanCollide = false
+    part1.Position = rootPart.Position + Vector3.new(0, 2, 0)
+    part1.Anchored = true
+    emitEffects(part1)
+    Debris:AddItem(part1, 0.3)
+
+    -- Animação
+    local startTime = tick()
+    local duration = 0.1
+    local moveDist = 1
+
+    RunService.Heartbeat:Connect(function()
+        local progress = math.clamp((tick() - startTime) / duration, 0, 1)
+        local transparency = NumberSequence.new(1 - progress)
+        for _, beam in ipairs(beams) do
+            beam.Transparency = transparency
+        end
+
+        local xOffset = -moveDist/2 + moveDist * progress
+        for partName, cfg in pairs(partConfigs) do
+            local part = slashModel:FindFirstChild(partName)
+            if part then
+                part.CFrame = rootPart.CFrame * CFrame.new(cfg.offset + Vector3.new(xOffset, 0, 0)) * cfg.rotation
+            end
+        end
+
+        if progress >= 1 then
+            slashModel:Destroy()
+        end
+    end)
+
+    tocarSom(EnchantList["Claws"])
+end
+
+-- UI
+Tab:AddSection("Enchants")
+
+local activeEnchant = "None"
+local enchantConnection
+
+Tab:AddDropdown("EnchantSelector", {
+    Title = "Select Enchant",
+    Values = dropdownValues,
+    Default = "None",
+    Callback = function(Value)
+        activeEnchant = Value
+
+        if enchantConnection then
+            enchantConnection:Disconnect()
+            enchantConnection = nil
+        end
+
+        if activeEnchant == "None" then
+            print("❌ Enchants desligados.")
+            return
+        end
+
+        -- Acha SuccessFrame
+        local successFrame
+        pcall(function()
+    local gui = player:FindFirstChild("PlayerGui")
+    if not gui then return end
+    local hud = gui:FindFirstChild("HUD")
+    if not hud then return end
+    local holder = hud:FindFirstChild("HolderBottom")
+    if not holder then return end
+    local toolbar = holder:FindFirstChild("ToolbarButtons")
+    if not toolbar then return end
+    local deflect = toolbar:FindFirstChild("DeflectButton")
+    if not deflect then return end
+    successFrame = deflect:FindFirstChild("SuccessFrame")
+end)
+
+-- Tentativa mobile
+if not successFrame then
+    pcall(function()
+        local gui = player:FindFirstChild("PlayerGui")
+        if not gui then return end
+        local mobileGUI = gui:FindFirstChild("MobileButtonsGUI")
+        if not mobileGUI then return end
+        local holder = mobileGUI:FindFirstChild("MobileButtonHolder")
+        if not holder then return end
+        local deflect = holder:FindFirstChild("DeflectButton")
+        if not deflect then return end
+        successFrame = deflect:FindFirstChild("SuccessFrame")
+    end)
+end
+
+        if not successFrame then
+            warn("⚠️ SuccessFrame não encontrado.")
+            return
+        end
+
+        enchantConnection = RunService.Heartbeat:Connect(function()
+            local ok, isVisible = pcall(function()
+                return successFrame.Visible
+            end)
+
+            if ok and isVisible then
+                successFrame.Visible = false -- reset
+
+                -- Encontra módulo
+                local selectedModule
+                for _, module in ipairs(StarterPlayerScripts:GetChildren()) do
+                    local enchantModules = module:FindFirstChild("EnchantModules")
+                    if enchantModules and enchantModules:FindFirstChild(activeEnchant) then
+                        selectedModule = enchantModules:FindFirstChild(activeEnchant)
+                        break
+                    end
+                end
+
+                if not selectedModule then
+                    warn("❌ Não foi possível encontrar o módulo:", activeEnchant)
+                    return
+                end
+
+                -- Claws tem lógica própria
+                if activeEnchant == "Claws" then
+                    dispararClaws(selectedModule)
+                    return
+                end
+
+                -- Container FX
+                local FXContainer = Workspace:FindFirstChild("LocalFX") or Instance.new("Folder")
+                FXContainer.Name = "LocalFX"
+                FXContainer.Parent = Workspace
+
+                -- Part "3"
+                local part3 = selectedModule:FindFirstChild("3")
+                if part3 then
+                    part3 = part3:Clone()
+                    part3.Parent = FXContainer
+                    part3.Transparency = 1
+                    part3.CanCollide = false
+                    part3.Anchored = true
+
+                    local offset = CFrame.new(0, 0, 0)
+                    local connection
+                    connection = RunService.Heartbeat:Connect(function()
+                        if part3.Parent and rootPart.Parent then
+                            part3.CFrame = rootPart.CFrame * offset
+                        else
+                            if connection then connection:Disconnect() end
+                        end
+                    end)
+
+                    emitEffects(part3)
+                    Debris:AddItem(part3, 3)
+                    task.delay(3, function()
+                        if connection then connection:Disconnect() end
+                    end)
+                end
+
+                -- Som
+                tocarSom(EnchantList[activeEnchant])
+            end
+        end)
+    end
+})
+
+
+
+
+
+
+
+
+        local Players = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local Workspace = game:GetService("Workspace")
+
+        local player = Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        -- Função que remove qualquer skin aplicada
+        local function removeSkin()
+            for _, obj in ipairs(Workspace:GetChildren()) do
+                if obj:IsA("Model") and obj.Name:match("^Skin%d+$") then
+                    obj:Destroy()
+                end
+            end
+        end
+
+        -- Função que aplica uma skin
+        local function applySkin(skinNumber)
+            local playerTorso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+            local playerHead = character:FindFirstChild("Head")
+            local playerLeftArm = character:FindFirstChild("Left Arm") or character:FindFirstChild("LeftUpperArm")
+            local playerRightArm = character:FindFirstChild("Right Arm") or character:FindFirstChild("RightUpperArm")
+            local playerLeftLeg = character:FindFirstChild("Left Leg") or character:FindFirstChild("LeftUpperLeg")
+            local playerRightLeg = character:FindFirstChild("Right Leg") or character:FindFirstChild("RightUpperLeg")
+
+            -- Limpa skins antigas
+            removeSkin()
+
+        -- Pega e clona a skin escolhida
+        local skinTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Skins"):FindFirstChild("Skin"..skinNumber)
+        if not skinTemplate then
+            warn("Skin"..skinNumber.." não encontrada!")
+            return
+        end
+
+        local skin = skinTemplate:Clone()
+        skin.Parent = Workspace
+
+        -- Partes que queremos preservar
+        local partsToPreserve = {
+            "Body", "Head", "Torso", "Right Leg", "Right Arm", "Left Leg", "Left Arm"
+        }
+
+        -- Configura transparência e colisão
+        for _, child in ipairs(skin:GetChildren()) do
+            if not table.find(partsToPreserve, child.Name) then
+                child:Destroy()
+            elseif child:IsA("BasePart") then
+                child.Transparency = 1
+                child.CanCollide = false
+            end
+        end
+
+        -- Função para soldar partes
+        local function weldParts(skinPart, playerPart)
+            if skinPart and playerPart then
+                local weld = Instance.new("Weld")
+                weld.Part0 = skinPart
+                weld.Part1 = playerPart
+                weld.C0 = CFrame.new(0, 0, 0)
+                weld.C1 = CFrame.new(0, 0, 0)
+                weld.Parent = skinPart
+            end
+        end
+
+        -- Cria welds
+        weldParts(skin:FindFirstChild("Head"), playerHead)
+        weldParts(skin:FindFirstChild("Torso"), playerTorso)
+        weldParts(skin:FindFirstChild("Left Arm"), playerLeftArm)
+        weldParts(skin:FindFirstChild("Right Arm"), playerRightArm)
+        weldParts(skin:FindFirstChild("Left Leg"), playerLeftLeg)
+        weldParts(skin:FindFirstChild("Right Leg"), playerRightLeg)
+        end
+
+    -- Dropdown de skins
+    local SKINS = {}
+    for i = 1, 11 do
+        SKINS[tostring(i)] = "Skin"..i
+    end
+
+    local skinOptions = {"None"}
+for n, _ in pairs(SKINS) do
+    table.insert(skinOptions, n)
+end
+
+local selectedSkin = "None"
+
+Tab:AddSection("Skins")
+
+Tab:AddDropdown("SkinSelector", {
+    Title = "Select Skin",
+    Values = skinOptions,
+    Default = "None",
+    Callback = function(Value)
+        selectedSkin = Value
+        if Value == "None" then
+            removeSkin()
+        else
+            applySkin(Value)
+        end
+    end
+})
 
         local SKYBOXES = {
             ["1"] = {
