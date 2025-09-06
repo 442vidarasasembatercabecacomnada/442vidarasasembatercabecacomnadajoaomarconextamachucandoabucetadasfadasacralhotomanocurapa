@@ -288,7 +288,7 @@ return function(Tab, Fluent)
         Tab:AddSection("Poses")
 
         local SheetItemData = require(ReplicatedStorage.DataBins.ItemData:FindFirstChild("SheetItemData"))
-        local AnimData = {NoneOptions = "None",}
+        local AnimData = {"None"}
         for key, item in SheetItemData do
 	        if item.Category == "Pose" and item.DisplayName then
 		        table.insert(AnimData, item.DisplayName)
@@ -307,7 +307,7 @@ return function(Tab, Fluent)
         Tab:AddDropdown("AnimChanger", {
 	        Title = "Select pose",
 	        Values = AnimData,
-	        Default = AnimData[1] or "None",
+	        Default = "None",
 	        Callback = function(Value)
 		        local player = game.Players.LocalPlayer
 		        local character = player.Character or player.CharacterAdded:Wait()
