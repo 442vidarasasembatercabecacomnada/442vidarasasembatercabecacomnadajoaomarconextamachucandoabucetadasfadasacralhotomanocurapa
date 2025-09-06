@@ -12,19 +12,6 @@ return function(Tab, Fluent)
         local isXClosure = is_synapse_function or issentinelclosure or is_protosmasher_closure or is_sirhurt_closure or istempleclosure or checkclosure
         local isLClosure = islclosure or is_l_closure or (iscclosure and function(f) return not iscclosure(f) end)
 
-        local exploitSupported = (
-            type(getGc) == "function" and type(getInfo) == "function" and
-            type(getUpvalue) == "function" and type(getConstants) == "function" and
-            type(isXClosure) == "function" and type(isLClosure) == "function"
-        )
-
-        if exploitSupported then
-            local ok, result = pcall(getGc)
-            if not ok or type(result) ~= "table" then
-                exploitSupported = false
-            end
-        end
-
         local exploitSupported = not _G.SemiAllowedExecutors[_G.Executor]
 
         local warningMessage = exploitSupported
@@ -96,14 +83,14 @@ return function(Tab, Fluent)
                 Title = "Dash power",
                 Default = dashPowerValue,
                 Min = 40,
-                Max = 200,
+                Max = 80,
                 Rounding = 0,
                 Callback = function(value)
                     dashPowerValue = value
                     if updateThread then
                         task.cancel(updateThread)
                     end
-                    updateThread = task.delay(0.3, function()
+                    updateThread = task.delay(0.5, function()
                         for _, func in ipairs(getGc()) do
                             if type(func) == "function" and isLClosure(func) and not isXClosure(func) then
                                 local success, upvalues = pcall(getUpvalue, func, 1)
@@ -124,15 +111,15 @@ return function(Tab, Fluent)
                 Title = "Infinite jump",
                 Default = false,
                 Callback = function(state)
-                for _, func in ipairs(getGc()) do
-                    if type(func) == "function" and isLClosure(func) and not isXClosure(func) then
-                        local success, upvalues = pcall(getUpvalue, func, 1)
-                        if success and type(upvalues) == "table" and rawget(upvalues, "ExtraJumpCount") ~= nil then
-                            upvalues["ExtraJumpCount"] = state and 100000 or 1
-                            break
+                    for _, func in ipairs(getGc()) do
+                        if type(func) == "function" and isLClosure(func) and not isXClosure(func) then
+                            local success, upvalues = pcall(getUpvalue, func, 1)
+                            if success and type(upvalues) == "table" and rawget(upvalues, "ExtraJumpCount") ~= nil then
+                                upvalues["ExtraJumpCount"] = state and 100000 or 1
+                                break
+                            end
                         end
                     end
-                end
                 end
             })
 
