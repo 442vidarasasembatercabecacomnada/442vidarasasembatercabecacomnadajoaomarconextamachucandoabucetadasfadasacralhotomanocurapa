@@ -355,7 +355,7 @@ end
         end
 
         Tab:AddParagraph({
-            Title = "Hello, " .. player.Name,
+            Title = "Hello, " .. player.DisplayName,
             Content = "License valid until: " .. tostring(_G.LicenseExpiryText or "N/A"),
         })
 
