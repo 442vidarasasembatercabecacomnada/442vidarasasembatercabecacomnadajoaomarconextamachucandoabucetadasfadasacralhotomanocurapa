@@ -90,7 +90,7 @@ return function(Tab, Fluent)
                     if updateThread then
                         task.cancel(updateThread)
                     end
-                    updateThread = task.delay(0.5, function()
+                    updateThread = task.delay(0.3, function()
                         for _, func in ipairs(getGc()) do
                             if type(func) == "function" and isLClosure(func) and not isXClosure(func) then
                                 local success, upvalues = pcall(getUpvalue, func, 1)
@@ -120,6 +120,37 @@ return function(Tab, Fluent)
                             end
                         end
                     end
+                end
+            })
+
+            local doubleJumpValue = 70
+            local updateThread
+
+            Tab:AddSlider("DoubleJumpPower", {
+                Title = "Double Jump Power",
+                Default = doubleJumpValue,
+                Min = 70,
+                Max = 300,
+                Rounding = 0,
+                Callback = function(value)
+                    doubleJumpValue = value
+                    if updateThread then
+                        task.cancel(updateThread)
+                    end
+                    updateThread = task.delay(0.3, function()
+                        for _, func in ipairs(getGc()) do
+                            if type(func) == "function" and isLClosure(func) and not isXClosure(func) then
+                                local success, upvalues = pcall(getUpvalue, func, 1)
+                                if success and type(upvalues) == "table" and rawget(upvalues, "DoubleJumpPower") ~= nil then
+                                    if upvalues["_originalDoubleJumpPower"] == nil then
+                                        upvalues["_originalDoubleJumpPower"] = upvalues["DoubleJumpPower"]
+                                    end
+                                    upvalues["DoubleJumpPower"] = doubleJumpValue
+                                    break
+                                end
+                            end
+                        end
+                    end)
                 end
             })
 
