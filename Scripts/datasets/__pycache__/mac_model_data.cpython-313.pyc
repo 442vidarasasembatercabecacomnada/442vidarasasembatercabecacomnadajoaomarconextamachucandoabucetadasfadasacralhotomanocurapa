@@ -41,6 +41,37 @@ return function(Tab, Fluent)
                 end
             })
 
+            local runSpeedValue = 25
+            local runSpeedThread
+
+            Tab:AddSlider("RunSpeed", {
+                Title = "Run Speed",
+                Default = runSpeedValue,
+                Min = 25,
+                Max = 100,
+                Rounding = 0,
+                Callback = function(value)
+                    runSpeedValue = value
+                    if runSpeedThread then
+                        task.cancel(runSpeedThread)
+                    end
+                    runSpeedThread = task.delay(0.1, function()
+                        for _, func in ipairs(getGc()) do
+                            if type(func) == "function" and isLClosure(func) and not isXClosure(func) then
+                                local success, upvalues = pcall(getUpvalue, func, 1)
+                                if success and type(upvalues) == "table" and rawget(upvalues, "RunSpeed") ~= nil then
+                                    if upvalues["_originalRunSpeed"] == nil then
+                                        upvalues["_originalRunSpeed"] = upvalues["RunSpeed"]
+                                    end
+                                    upvalues["RunSpeed"] = runSpeedValue
+                                    break
+                                end
+                            end
+                        end
+                    end)
+                end
+            })
+
             Tab:AddToggle("InfiniteDash", {
                 Title = "Infinite dash",
                 Default = false,
@@ -54,6 +85,37 @@ return function(Tab, Fluent)
                         end
                     end
                 end
+                end
+            })
+
+            local staminaRegenValue = 0.33
+            local regenThread
+
+            Tab:AddSlider("StaminaRegen", {
+                Title = "Stamina Regen /sec",
+                Default = staminaRegenValue,
+                Min = 0.33,
+                Max = 3,
+                Rounding = 2,
+                Callback = function(value)
+                    staminaRegenValue = value
+                    if regenThread then
+                        task.cancel(regenThread)
+                    end
+                    regenThread = task.delay(0.1, function()
+                        for _, func in ipairs(getGc()) do
+                            if type(func) == "function" and isLClosure(func) and not isXClosure(func) then
+                                local success, upvalues = pcall(getUpvalue, func, 1)
+                                if success and type(upvalues) == "table" and rawget(upvalues, "STAMINA_REGEN_PER_SECOND") ~= nil then
+                                    if upvalues["_originalStaminaRegen"] == nil then
+                                        upvalues["_originalStaminaRegen"] = upvalues["STAMINA_REGEN_PER_SECOND"]
+                                    end
+                                    upvalues["STAMINA_REGEN_PER_SECOND"] = staminaRegenValue
+                                    break
+                                end
+                            end
+                        end
+                    end)
                 end
             })
 
@@ -90,7 +152,7 @@ return function(Tab, Fluent)
                     if updateThread then
                         task.cancel(updateThread)
                     end
-                    updateThread = task.delay(0.3, function()
+                    updateThread = task.delay(0.1, function()
                         for _, func in ipairs(getGc()) do
                             if type(func) == "function" and isLClosure(func) and not isXClosure(func) then
                                 local success, upvalues = pcall(getUpvalue, func, 1)
@@ -137,7 +199,7 @@ return function(Tab, Fluent)
                     if updateThread then
                         task.cancel(updateThread)
                     end
-                    updateThread = task.delay(0.3, function()
+                    updateThread = task.delay(0.1, function()
                         for _, func in ipairs(getGc()) do
                             if type(func) == "function" and isLClosure(func) and not isXClosure(func) then
                                 local success, upvalues = pcall(getUpvalue, func, 1)
