@@ -10,7 +10,7 @@ return function(Tab, Fluent)
         Tab:AddKeybind("parrybind", {
             Title = "Parry bind",
             Mode = "Toggle",
-            Default = "G",
+            Default = "...",
             Callback = function(Value)
                 _G.AutoParryToggle:SetValue(not _G.AutoParryToggle.Value)
             end
@@ -19,7 +19,7 @@ return function(Tab, Fluent)
         Tab:AddKeybind("abilitybind", {
             Title = "Auto ability bind",
             Mode = "Toggle",
-            Default = "I",
+            Default = "...",
             Callback = function(Value)
                 _G.AutoAbilityToggle:SetValue(not _G.AutoAbilityToggle.Value)
             end
@@ -30,30 +30,76 @@ return function(Tab, Fluent)
         Tab:AddKeybind("autofarmbind", {
             Title = "Auto farm bind",
             Mode = "Toggle",
-            Default = "P",
-            Callback = function()
-                if InfParryToggle then
-                    _G.autoFarmToggleObject:SetValue(not _G.autoFarmToggleObject.Value)
-                end
+            Default = "...",
+            Callback = function(Value)
+                _G.autoFarmToggleObject:SetValue(not _G.autoFarmToggleObject.Value)
             end
         })
 
-        if not _G.SemiAllowedExecutors[_G.Executor] then
+        Tab:AddSection("Rage")
 
-            Tab:AddSection("Rage")
+        Tab:AddKeybind("InfparryBind", {
+            Title = "Infinite parry bind",
+            Mode = "Toggle",
+            Default = "...",
+            Callback = function(Value)
+                _G.InfParryToggle:SetValue(not _G.InfParryToggle.Value)
+            end
+        })
 
-            Tab:AddKeybind("infparrybind", {
-                Title = "Infinite parry bind",
-                Mode = "Toggle",
-                Default = "U",
-                Callback = function()
-                    if InfParryToggle then
-                        _G.InfParryToggle:SetValue(not _G.InfParryToggle.Value)
-                    end
-                end
-            })
+        Tab:AddKeybind("GodBind", {
+            Title = "God mode bind",
+            Mode = "Toggle",
+            Default = "...",
+            Callback = function(Value)
+                _G.GodToggle:SetValue(not _G.GodToggle.Value)
+            end
+        })
 
-        end
+        Tab:AddKeybind("FlyBind", {
+            Title = "Invisible bind",
+            Mode = "Toggle",
+            Default = "...",
+            Callback = function(Value)
+                _G.FlyToggle:SetValue(not _G.FlyToggle.Value)
+            end
+        })
+
+        Tab:AddKeybind("NoclipBind", {
+            Title = "Noclip bind",
+            Mode = "Toggle",
+            Default = "...",
+            Callback = function(Value)
+                _G.NoclipToggle:SetValue(not _G.NoclipToggle.Value)
+            end
+        })
+
+        Tab:AddKeybind("InfDashBind", {
+            Title = "Inf dash bind",
+            Mode = "Toggle",
+            Default = "...",
+            Callback = function(Value)
+                _G.InfDashToggle:SetValue(not _G.InfDashToggle.Value)
+            end
+        })
+
+        Tab:AddKeybind("DashCooldwnBind", {
+            Title = "Dash cooldwn bind",
+            Mode = "Toggle",
+            Default = "...",
+            Callback = function(Value)
+                _G.NoDashCoolToggle:SetValue(not _G.NoDashCoolToggle.Value)
+            end
+        })
+
+        Tab:AddKeybind("InfJumpBind", {
+            Title = "Inf jump bind",
+            Mode = "Toggle",
+            Default = "...",
+            Callback = function(Value)
+                _G.InfJumpToggle:SetValue(not _G.InfJumpToggle.Value)
+            end
+        })
 
     end
     
