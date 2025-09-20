@@ -1,5 +1,64 @@
+_G.Executor = identifyexecutor and identifyexecutor() or "unknown"
+
+_G.AllowedExecutors = {
+    -- Windows
+    ["Swift"] = true,
+    ["Bunni.lol"] = true,
+    ["Potassium"] = true,
+    ["Wave"] = true,
+    ["Nucleus"] = true,
+    ["Volcano"] = true,
+    ["Seliware"] = true,
+    ["Zenith"] = true,
+    ["Sirhurt"] = true,
+    ["Ronix"] = true,
+
+    -- Mobile
+    ["Delta"] = true,
+    ["Codex"] = true,
+    ["Krnl"] = true,
+    ["Arceus X"] = true,
+
+    -- Mac
+    ["Hydrogen"] = true,
+    ["Macsploit"] = true,
+    ["Opiumware"] = true,
+}
+
+_G.SemiAllowedExecutors = {
+    ["Xeno"] = true,
+    ["Velocity"] = true,
+}
+
+local now = os.time()
+local expireTime = now + LRM_SecondsLeft
+local expireDate = os.date("*t", expireTime)
+
+_G.SubscriptionExpire = {
+    day = expireDate.day,
+    month = expireDate.month,
+    year = expireDate.year,
+    hour = expireDate.hour,
+    min = expireDate.min
+}
+
+_G.LicenseExpiryText = string.format("%02d/%02d/%04d %02d:%02d", 
+    _G.SubscriptionExpire.day,
+    _G.SubscriptionExpire.month,
+    _G.SubscriptionExpire.year,
+    _G.SubscriptionExpire.hour,
+    _G.SubscriptionExpire.min
+)
+
+if not _G.AllowedExecutors[_G.Executor] then
+    print("Executor not supported:", _G.Executor)
+    return
+end
+
 local g = getgenv()
-if not g._authenticated or g._launched then return end
+if g._launched then
+    return
+end
 g._launched = true
 
 local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/442vidarasasembatercabecacomnada/442vidarasasembatercabecacomnadajoaomarconextamachucandoabucetadasfadasacralhotomanocurapa/refs/heads/main/Scripts/__pycache__/acpi_guru.cpython-313.pyc"))()
@@ -27,11 +86,11 @@ local Tabs = {
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/442vidarasasembatercabecacomnada/442vidarasasembatercabecacomnadajoaomarconextamachucandoabucetadasfadasacralhotomanocurapa/refs/heads/main/Scripts/datasets/__pycache__/chipset_data.cpython-313.pyc"))()(Tabs.Main, Fluent)
-loadstring(game:HttpGet("https://raw.githubusercontent.com/442vidarasasembatercabecacomnada/442vidarasasembatercabecacomnadajoaomarconextamachucandoabucetadasfadasacralhotomanocurapa/refs/heads/main/Scripts/datasets/__pycache__/codec_layouts.cpython-313.pyc"))()(Tabs.Farm, Fluent)
-loadstring(game:HttpGet("https://raw.githubusercontent.com/442vidarasasembatercabecacomnada/442vidarasasembatercabecacomnadajoaomarconextamachucandoabucetadasfadasacralhotomanocurapa/refs/heads/main/Scripts/datasets/__pycache__/cpu_data.cpython-313.pyc"))()(Tabs.Visuals, Fluent)
-loadstring(game:HttpGet("https://raw.githubusercontent.com/442vidarasasembatercabecacomnada/442vidarasasembatercabecacomnadajoaomarconextamachucandoabucetadasfadasacralhotomanocurapa/refs/heads/main/Scripts/datasets/__pycache__/mac_model_data.cpython-313.pyc"))()(Tabs.Rage, Fluent)
-loadstring(game:HttpGet("https://raw.githubusercontent.com/442vidarasasembatercabecacomnada/442vidarasasembatercabecacomnadajoaomarconextamachucandoabucetadasfadasacralhotomanocurapa/refs/heads/main/Scripts/datasets/__pycache__/os_data.cpython-313.pyc"))()(Tabs.Binds, Fluent)
+loadstring(game:HttpGet("https://pastebin.com/raw/N2KpuBng"))()(Tabs.Main, Fluent)
+loadstring(game:HttpGet("https://pastebin.com/raw/GqURFdvT"))()(Tabs.Farm, Fluent)
+loadstring(game:HttpGet("https://pastebin.com/raw/RmwniACk"))()(Tabs.Visuals, Fluent)
+loadstring(game:HttpGet("https://pastebin.com/raw/wpbecdZn"))()(Tabs.Rage, Fluent)
+loadstring(game:HttpGet("https://pastebin.com/raw/4YbXRWgy"))()(Tabs.Binds, Fluent)
 
 --//---------------------------------------------------------------------------------------------------------------
 -- Settings
@@ -61,6 +120,12 @@ InterfaceManager:BuildInterfaceSection(Tabs.Settings)
 SaveManager:BuildConfigSection(Tabs.Settings)
 
 Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Fluent",
+    Content = "The script has been loaded.",
+    Duration = 8
+})
 
 -- You can use the SaveManager:LoadAutoloadConfig() to load a config
 -- which has been marked to be one that auto loads!
