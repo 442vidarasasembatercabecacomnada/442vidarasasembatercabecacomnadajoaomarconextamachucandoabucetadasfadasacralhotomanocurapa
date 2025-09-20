@@ -11,359 +11,505 @@ return function(Tab, Fluent)
 
         local localPlayer = Players.LocalPlayer
 
-        -- Pega todas as swords
-        local SwordData = {}
+        local dropdownValues = {"None"}
         local assets = ReplicatedStorage:FindFirstChild("Assets")
         if assets then
-            local swordsFolder = assets:FindFirstChild("Swords")
+            local swordsFolder = assets:FindFirstChild("Swords") 
             if swordsFolder then
                 for _, model in ipairs(swordsFolder:GetChildren()) do
                     if model:IsA("Model") then
-                table.insert(SwordData, model.Name)
+                        table.insert(dropdownValues, model.Name)
                     end
                 end
             end
         end
 
-        -- Cria lista para dropdown com "NoneOptions" no topo
-        local dropdownValues = {"None"}
-        for _, name in ipairs(SwordData) do
-            table.insert(dropdownValues, name)
-        end
-
-        -- Pasta para guardar a espada original
         local storageFolder = ReplicatedStorage:FindFirstChild("SwordStorage_" .. localPlayer.UserId) or Instance.new("Folder")
         storageFolder.Name = "SwordStorage_" .. localPlayer.UserId
         storageFolder.Parent = ReplicatedStorage
 
+        local swordContainer = Workspace:FindFirstChild("PlayerSwordsContainer") or Instance.new("Folder")
+        swordContainer.Name = "PlayerSwordsContainer"
+        swordContainer.Parent = Workspace
+
         local originalSwordFolderName = localPlayer.Name .. " SwordWelds"
         local mainSwordPartName = "Sword"
-        local mainSwordWeldName = "Weld"
 
-        -- Guardar original
+        local originalSwordSaved = false
+
         local function findAndMoveOriginalSwordToStorage()
-            local movedSomething = false
+            local originalFolder = Workspace:FindFirstChild(originalSwordFolderName)
+            if not originalFolder then return false end
+
             storageFolder:ClearAllChildren()
-            local sourceFolder
-
-            for _, child in ipairs(Workspace:GetChildren()) do
-                if child.Name == originalSwordFolderName and child:IsA("Folder") and #child:GetChildren() > 0 then
-                    sourceFolder = child
-                    break
-                end
-            end
-
-            if sourceFolder then
-                for _, potentialDuplicate in ipairs(Workspace:GetChildren()) do
-                    if potentialDuplicate.Name == originalSwordFolderName and potentialDuplicate:IsA("Folder") and potentialDuplicate ~= sourceFolder then
-                pcall(function() potentialDuplicate:Destroy() end)
-                    end
-                end
-                for _, item in ipairs(sourceFolder:GetChildren()) do
-                    item.Parent = storageFolder
-                    movedSomething = true
-                end
-                return movedSomething
-            end
-
-            local looseItemsToMove = {}
-            local looseSwordPart = Workspace:FindFirstChild(mainSwordPartName)
-            if looseSwordPart and looseSwordPart:IsA("BasePart") then
-                table.insert(looseItemsToMove, looseSwordPart)
-                local looseWeld = Workspace:FindFirstChild(mainSwordWeldName)
-                if looseWeld and looseWeld:IsA("Weld") then
-                    table.insert(looseItemsToMove, looseWeld)
-                end
-            end
-            for _, item in ipairs(looseItemsToMove) do
+            for _, item in ipairs(originalFolder:GetChildren()) do
                 item.Parent = storageFolder
-                movedSomething = true
             end
-
-            return movedSomething
+            originalFolder:Destroy()
+            return true
         end
 
-        -- Devolver original
-        local function moveOriginalSwordBackToFolder()
-            local itemsInStorage = storageFolder:GetChildren()
-            if #itemsInStorage == 0 then return true end
-
-            local targetFolder = Workspace:FindFirstChild(originalSwordFolderName)
-            if not targetFolder or not targetFolder:IsA("Folder") then
-                if targetFolder then pcall(function() targetFolder:Destroy() end) end
-                targetFolder = Instance.new("Folder")
-                targetFolder.Name = originalSwordFolderName
-                targetFolder.Parent = Workspace
+        local function restoreOriginalSword(character)
+            local hand = character and character:FindFirstChild("rtool")
+            if not hand or #storageFolder:GetChildren() == 0 then
+                return
             end
 
-            for _, child in ipairs(itemsInStorage) do
-                child.Parent = targetFolder
-                task.wait()
+            local targetFolder = Instance.new("Folder")
+            targetFolder.Name = originalSwordFolderName
+    
+            local originalSwordPartClone
+            local originalWeldClone
+
+            for _, item in ipairs(storageFolder:GetChildren()) do
+                local itemClone = item:Clone()
+                itemClone.Parent = targetFolder
+                if itemClone.Name == mainSwordPartName and itemClone:IsA("BasePart") then
+                    originalSwordPartClone = itemClone
+                elseif itemClone:IsA("Weld") then
+                    originalWeldClone = itemClone
+                end
             end
 
-            return #storageFolder:GetChildren() == 0
+            if originalSwordPartClone and originalWeldClone then
+                originalWeldClone.Part0 = originalSwordPartClone
+                originalWeldClone.Part1 = hand
+                originalSwordPartClone.Anchored = false
+            end
+    
+            targetFolder.Parent = Workspace
         end
 
-        -- UI
-        Tab:AddSection("Swords")
-
-        Tab:AddDropdown("SwordSelector", {
-            Title = "Select sword",
+        local SwordSelector = Tab:AddDropdown("SwordSelector", {
+            Title = "Swords",
             Values = dropdownValues,
             Default = "None",
+            Description = "Choose your sword.",
             Callback = function(Value)
                 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+                local hand = character:FindFirstChild("rtool")
+                if not hand then return end
 
-                if Value == "None" then
-                    -- Remove custom e devolve original
-                    local existingSword = character:FindFirstChild("Sword")
-                    if existingSword then existingSword:Destroy() end
-                    moveOriginalSwordBackToFolder()
-                    return
+                if not originalSwordSaved then
+                    if findAndMoveOriginalSwordToStorage() then
+                        originalSwordSaved = true
+                    end
                 end
 
-                -- Guardar original (se ainda não guardou)
-                findAndMoveOriginalSwordToStorage()
+                local existingCustomSword = swordContainer:FindFirstChild(localPlayer.Name .. "_Sword")
+                if existingCustomSword then
+                    existingCustomSword:Destroy()
+                end
+                local existingOriginalFolder = Workspace:FindFirstChild(originalSwordFolderName)
+                if existingOriginalFolder then
+                    existingOriginalFolder:Destroy()
+                end
 
-                -- Equipar espada custom
-                local swordModel = ReplicatedStorage.Assets.Swords:FindFirstChild(Value)
+                if Value == "None" then
+                    if originalSwordSaved then
+                        restoreOriginalSword(character)
+                    end
+                    return
+                end
+        
+                local swordModel = ReplicatedStorage.Assets:FindFirstChild("Swords"):FindFirstChild(Value)
                 if swordModel then
-                    local sword = swordModel:FindFirstChild("Sword"):Clone()
-                    local offsetValue = swordModel:FindFirstChild("Offset").Value
+                    local swordPart = swordModel:FindFirstChild("Sword")
+                    local offsetValue = swordModel:FindFirstChild("Offset")
+                    if not swordPart or not offsetValue then return end
 
-                    -- remove qualquer sword atual
-                    local existingSword = character:FindFirstChild("Sword")
-                    if existingSword then existingSword:Destroy() end
-
-                    sword.Parent = character
+                    local sword = swordPart:Clone()
+                    sword.Name = localPlayer.Name .. "_Sword"
+                    sword.Parent = swordContainer
 
                     local weld = Instance.new("Weld")
                     weld.Part0 = sword
-                    weld.Part1 = character:FindFirstChild("rtool")
-                    weld.C1 = offsetValue
+                    weld.Part1 = hand
+                    weld.C1 = offsetValue.Value
                     weld.Parent = sword
-
                     sword.Anchored = false
                 end
             end
         })
 
-        Tab:AddSection("Auras")
-
-        local StarterPlayerScripts = game:GetService("StarterPlayer").StarterPlayerScripts
-        local Workspace = game:GetService("Workspace")
-        local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-
-        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
-        local currentAuraFolder
-
-        local auraList = {}
-        local auraPositions = {
-
-            ["AngelAura"] = CFrame.new(0, 0, -0.5),
-            ["ShadowAura"] = CFrame.new(0, -3, 0),
-            ["ShadowAura"] = CFrame.new(0, -3, -0.5),
-            ["DreamwalkerAura"] = CFrame.new(0, -3, 0),
-            ["HallowtideAura"] = CFrame.new(0, -3, 0),
-            ["BloodAura"] = CFrame.new(0, -2.8, 0),
-            ["InfernoAura"] = CFrame.new(0, -3, 0),
-            ["PoisonAura"] = CFrame.new(0, -2.8, 0),
-            ["PortalAura"] = CFrame.new(0, -2.9, 0),
-            ["LunarAura"] = CFrame.new(0, -2.9, 0),
-            ["RoseAura"] = CFrame.new(0, -2.9, 0),
-            ["ConstellationAura"] = CFrame.new(0, -2.9, 0),
-            ["ZenithAura"] = CFrame.new(0, -2.9, 0),
-            ["IgnisAura"] = CFrame.new(0, -2.9, 0),
-            ["EmperorAura"] = CFrame.new(0, -2.9, 0),
-            ["GoldenDragonAura"] = CFrame.new(0, -2.9, 0),
-            ["ShogunAura"] = CFrame.new(0, -2.9, 0),
-            ["CosmicAura"] = CFrame.new(0, -2.9, 0),
-            ["VoidAura"] = CFrame.new(0, -500, 0),
-            ["EclipseAura"] = CFrame.new(0, -500, 0),
+        
+        local function levenshtein(s, t)
+            local len_s, len_t = #s, #t
+            local matrix = {}
     
+            for i = 0, len_s do
+                matrix[i] = {[0] = i}
+            end
+            for j = 0, len_t do
+                matrix[0][j] = j
+            end
+
+            for i = 1, len_s do
+                for j = 1, len_t do
+                    local cost = (s:sub(i,i) == t:sub(j,j)) and 0 or 1
+                    matrix[i][j] = math.min(
+                        matrix[i-1][j] + 1,
+                        matrix[i][j-1] + 1,
+                        matrix[i-1][j-1] + cost
+                    )
+                end
+            end
+
+            return matrix[len_s][len_t]
+        end
+
+        local function findClosestSword(input, swordList)
+            input = input:lower()
+            local bestMatch = nil
+            local lowestDistance = math.huge
+
+            for _, swordName in ipairs(swordList) do
+                local distance = levenshtein(input, swordName:lower())
+                if distance < lowestDistance then
+                    lowestDistance = distance
+                    bestMatch = swordName
+                end
+            end
+
+            if lowestDistance <= 3 then
+                return bestMatch
+            else
+                return nil
+            end
+        end
+
+        Tab:AddInput("SwordInput", {
+            Title = "Sword by name",
+            Default = "",
+            Placeholder = "",
+            Finished = true,
+            Callback = function(Value)
+                local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+                if not character then return end
+
+                local closestSword = findClosestSword(Value, dropdownValues)
+
+                if closestSword then
+                    SwordSelector:SetValue(closestSword)
+                else
+                    if Fluent and Fluent.Notify then
+                        Fluent:Notify({
+                    Title = "Error",
+                            Content = "Sword not found for '" .. Value .. "'.",
+                            Duration = 5
+                        })
+                    end
+                end
+            end
+        })
+
+        local ReplicatedFirst = game:GetService("ReplicatedFirst")
+        local Players = game:GetService("Players")
+        local localPlayer = Players.LocalPlayer
+        local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+        local loadedModules = {}
+        local isReady = false
+        local selectedExplosionName = "None"
+
+        local customExplosionNames = {
+            Explosion1 = "Dragon's Roar",
+            Explosion2 = "Divine Judgement",
+            Explosion3 = "Explosion 3",
+            Explosion4 = "Shadow Punch",
+            Explosion5 = "Cursed Ascension",
+            Explosion6 = "Heaven Piercer",
+            Explosion7 = "Abyss Burst",
+            Explosion8 = "Roller Drop",
+            Explosion9 = "Meteor Strike",
         }
 
-        for _, child in ipairs(StarterPlayerScripts:GetChildren()) do
-            if child:FindFirstChild("Aura") then
-                local aura = child.Aura
-                local baseAura = aura:FindFirstChild("BaseAura")
-                if baseAura then
-                    for _, item in ipairs(baseAura:GetChildren()) do
-                        if #item:GetChildren() > 0 then
-                            table.insert(auraList, {
-                                Name = item.Name,
-                                Children = item:GetChildren()
-                            })
+        local excludedExplosions = {
+            _template = true,
+            Sample = true,
+        }
+
+        local function playVisualExplosion(explosionName, targetCharacter)
+            if explosionName == "None" or not isReady or not loadedModules[explosionName] or not targetCharacter then return end
+            if not targetCharacter:FindFirstChild("HumanoidRootPart") then return end
+
+            local BaseExplosion = loadedModules["Base"]
+            local TargetExplosion = loadedModules[explosionName]
+            local BaseClass = require(ReplicatedFirst.Classes.Class.Base)
+
+            local explosionInstance = BaseClass:extend({})()
+            explosionInstance.Position = targetCharacter.HumanoidRootPart.Position
+            explosionInstance.Source = localPlayer.Character
+            explosionInstance.Target = targetCharacter
+            explosionInstance.Folder = Instance.new("Folder", workspace.FX)
+            explosionInstance.maid:GiveTask(explosionInstance.Folder)
+
+            for funcName, func in pairs(BaseExplosion) do
+                if type(func) == "function" then
+                    explosionInstance[funcName] = func
+                end
+            end
+
+            pcall(TargetExplosion.Play, explosionInstance)
+        end
+
+        local function createExplosionUI(explosionNames)
+            if not table.find(explosionNames, "None") then
+                table.insert(explosionNames, 1, "None")
+            end
+            selectedExplosionName = "None"
+
+            Tab:AddDropdown("VisualExplosion", {
+                Title = "Explosions",
+                Values = explosionNames,
+                Default = selectedExplosionName,
+                Description = "Explosion on death.",
+                Callback = function(selected)
+                    selectedExplosionName = selected
+                end
+            })
+        end
+
+        task.spawn(function()
+            local playerScripts = localPlayer:WaitForChild("PlayerScripts")
+
+            local function inspectAndLoad(containerScript)
+                if isReady then return true end
+                local baseModule = containerScript:FindFirstChild("BaseExplosion")
+                if baseModule and baseModule:IsA("ModuleScript") then
+                    local explosionNames = {}
+                    local baseExplosionCode = require(baseModule)
+                    loadedModules["Base"] = baseExplosionCode
+
+                    for _, explosionModule in ipairs(baseModule:GetChildren()) do
+                        if explosionModule:IsA("ModuleScript") and not excludedExplosions[explosionModule.Name] then
+                            local internalName = explosionModule.Name
+                            local displayName = customExplosionNames[internalName] or internalName
+                            table.insert(explosionNames, displayName)
+                            loadedModules[displayName] = require(explosionModule)
+                        end
+                    end
+
+                    table.sort(explosionNames, function(a, b) return a < b end)
+                    isReady = true
+                    createExplosionUI(explosionNames)
+                    return true
+                end
+                return false
+            end
+
+            for _, child in ipairs(playerScripts:GetChildren()) do
+                if inspectAndLoad(child) then return end
+            end
+
+            local connection = playerScripts.ChildAdded:Connect(function(child)
+                if inspectAndLoad(child) then connection:Disconnect() end
+            end)
+        end)
+
+        task.spawn(function()
+            local announcementLabel = playerGui:WaitForChild("RunTimeModules", 60)
+                :WaitForChild("NotificationGui", 60)
+                :WaitForChild("GameAnnouncement", 60)
+                :WaitForChild("TextLabel", 60)
+            if not announcementLabel then return end
+
+            announcementLabel:GetPropertyChangedSignal("Text"):Connect(function()
+                local message = announcementLabel.Text:upper()
+                local localDisplayName = localPlayer.DisplayName:upper()
+
+                local killerName, victimName = message:match("^(%S+) KILLED (%S+)!$")
+                if killerName and killerName == localDisplayName then
+                    for _, player in ipairs(Players:GetPlayers()) do
+                        if player.DisplayName:upper() == victimName then
+                            local targetCharacter = player.Character
+                            if targetCharacter then
+                                playVisualExplosion(selectedExplosionName, targetCharacter)
+                            end
+                            break
                         end
                     end
                 end
+            end)
+        end)
+
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local localPlayer = Players.LocalPlayer
+        local playerScripts = localPlayer:WaitForChild("PlayerScripts")
+
+        local character = nil
+        local baseAuraFolder = nil
+        local currentAuraObject = nil
+        local currentUpdateConnection = nil
+        local lastEquippedAuraName = nil
+
+        local function setupCharacter()
+            character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+            localPlayer.CharacterAdded:Connect(function(newCharacter)
+                character = newCharacter
+                if currentUpdateConnection then currentUpdateConnection:Disconnect() end
+                currentAuraObject, currentUpdateConnection = nil, nil
+                if lastEquippedAuraName then
+                    task.wait(0.5)
+                    equipVisualAura(lastEquippedAuraName)
+                end
+            end)
+        end
+
+        local function findBaseAuraFolder()
+            for _, scriptObject in ipairs(playerScripts:GetChildren()) do
+                if scriptObject:FindFirstChild("Aura") and scriptObject.Aura:FindFirstChild("BaseAura") then
+                    return scriptObject.Aura.BaseAura
+                end
+            end
+            return nil
+        end
+
+        local function equipVisualAura(auraName)
+            if not baseAuraFolder or not character or not character.Parent then return end
+
+            if currentAuraObject and currentAuraObject.Destroy then pcall(currentAuraObject.Destroy, currentAuraObject) end
+            if currentUpdateConnection then currentUpdateConnection:Disconnect() end
+            currentAuraObject, currentUpdateConnection = nil, nil
+            lastEquippedAuraName = auraName
+
+            if not auraName or auraName == "None" then return end
+
+            local auraModule = baseAuraFolder:FindFirstChild(auraName)
+            if not auraModule then return end
+
+            local success, auraClass = pcall(require, auraModule)
+            if not success then return end
+    
+            local successCreate, newAuraObject = pcall(auraClass, character, true, auraName)
+            if not successCreate then return end
+            currentAuraObject = newAuraObject
+
+            if currentAuraObject and currentAuraObject.Update then
+                currentUpdateConnection = RunService.RenderStepped:Connect(function(dt)
+                    pcall(currentAuraObject.Update, currentAuraObject, dt)
+                end)
             end
         end
 
         local auraOptions = {"None"}
-        for _, aura in ipairs(auraList) do
-            table.insert(auraOptions, aura.Name)
+
+        setupCharacter()
+        baseAuraFolder = findBaseAuraFolder()
+
+        if baseAuraFolder then
+            local foundAuras = {}
+            local seenAuras = {}
+
+            for _, auraModule in ipairs(baseAuraFolder:GetChildren()) do
+                local auraName = auraModule.Name
+
+                if auraModule:IsA("ModuleScript") and auraName ~= "_Template" and auraName ~= "Default" and not seenAuras[auraName] then
+                    table.insert(foundAuras, auraName)
+                    seenAuras[auraName] = true
+                    end
+                end
+    
+            table.sort(foundAuras)
+    
+            for _, auraName in ipairs(foundAuras) do
+                table.insert(auraOptions, auraName)
+            end
         end
 
         Tab:AddDropdown("AuraSelector", {
-            Title = "Select aura",
+            Title = "Auras",
             Values = auraOptions,
             Default = "None",
-            Callback = function(selected)
-                if currentAuraFolder then
-                    for _, child in ipairs(currentAuraFolder:GetChildren()) do
-                        if child:IsA("BasePart") then
-                            child:Destroy()
-                        end
-                    end
-                    currentAuraFolder:Destroy()
-                end
-
-                if selected == "None" then
-                    currentAuraFolder = nil
-                    return
-                end
-
-                for _, aura in ipairs(auraList) do
-                    if aura.Name == selected then
-                        local auraFolder = Instance.new("Folder")
-                        auraFolder.Name = selected
-                        auraFolder.Parent = Workspace
-                
-                        currentAuraFolder = auraFolder
-
-                        local auraPosition = auraPositions[selected] or CFrame.new(0, 0, 0)
-
-                        for _, subItem in ipairs(aura.Children) do
-                            local clone = subItem:Clone()
-
-                            if clone:IsA("BasePart") then
-                                local weld = Instance.new("Weld")
-                                weld.Name = "AuraWeld"
-                                weld.Part0 = humanoidRootPart
-                                weld.Part1 = clone
-                                weld.C0 = auraPosition
-                                weld.C1 = CFrame.new(0, 0, 0)
-
-                                clone.Parent = auraFolder
-                                clone.Anchored = false
-
-                                if clone:IsA("BasePart") then
-                                    clone.CanCollide = false
-                                end
-
-                                weld.Parent = clone
-                            elseif clone:IsA("Model") then
-                                for _, part in ipairs(clone:GetChildren()) do
-                                    if part:IsA("BasePart") then
-                                        local weld = Instance.new("Weld")
-                                        weld.Name = "AuraWeld"
-                                        weld.Part0 = humanoidRootPart
-                                        weld.Part1 = part
-                                        weld.C0 = auraPosition
-                                        weld.C1 = CFrame.new(0, 0, 0)
-
-                                        part.Parent = auraFolder
-                                        part.Anchored = false
-
-                                        if part:IsA("BasePart") then
-                                            part.CanCollide = false
-                                        end
-                                        weld.Parent = part
-                                    end
-                                end
-                            end
-                            local tag = Instance.new("BoolValue")
-                            tag.Name = "AuraTag"
-                            tag.Parent = clone
-                        end
-                        auraFolder.Parent = Workspace
-                    end
-                end
+            Description = "Change your aura.",
+            Callback = function(selectedAura)
+                equipVisualAura(selectedAura)
             end
         })
 
-        Tab:AddSection("Poses")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local RunService = game:GetService("RunService")
+        local Players = game:GetService("Players")
 
         local SheetItemData = require(ReplicatedStorage.DataBins.ItemData:FindFirstChild("SheetItemData"))
         local AnimData = {"None"}
         for key, item in SheetItemData do
-	        if item.Category == "Pose" and item.DisplayName then
-		        table.insert(AnimData, item.DisplayName)
-	        end
+            if item.Category == "Pose" and item.DisplayName then
+                table.insert(AnimData, item.DisplayName)
+            end
         end
 
         local function getPoseUsageDataByDisplayName(displayName)
-	        for key, item in SheetItemData do
-		        if item.Category == "Pose" and item.DisplayName == displayName then
-			        return item.UsageData
-		        end
-	        end
-	        return nil
+            for key, item in SheetItemData do
+                if item.Category == "Pose" and item.DisplayName == displayName then
+                    return item.UsageData
+                end
+            end
+            return nil
         end
 
+        local currentAnimationTrack = nil
+        local runningConnection = nil
+
         Tab:AddDropdown("AnimChanger", {
-	        Title = "Select pose",
-	        Values = AnimData,
-	        Default = "None",
-	        Callback = function(Value)
-		        local player = game.Players.LocalPlayer
-		        local character = player.Character or player.CharacterAdded:Wait()
-		        local humanoid = character:WaitForChild("Humanoid")
+            Title = "Poses",
+            Values = AnimData,
+            Default = "None",
+            Description = "Choose a pose.",
+            Callback = function(Value)
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                if not character then return end
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if not humanoid then return end
 
-		        local animationId
+                if runningConnection then
+                    runningConnection:Disconnect()
+                    runningConnection = nil
+                end
+                if currentAnimationTrack then
+                    currentAnimationTrack:Stop()
+                    currentAnimationTrack:Destroy()
+                    currentAnimationTrack = nil
+                end
 
-		        if Value == "None" then
-			        animationId = "0"
-		        else
-			        local usageData = getPoseUsageDataByDisplayName(Value)
-			        if not usageData then
-				        warn("No Pose found with DisplayName: " .. tostring(Value))
-				        return
-			        end
+                if Value == "None" then
+                    return
+                end
 
-			        animationId = usageData.AnimationId or usageData[1] or usageData
+                local usageData = getPoseUsageDataByDisplayName(Value)
+                if not usageData then
+                    return
+                end
 
-			        if not animationId or tostring(animationId) == "" then
-				        warn("No AnimationId found in UsageData for Pose: " .. tostring(Value))
-				        return
-			        end
-		        end
+                local animationId = usageData.AnimationId or usageData[1] or usageData
+                if not animationId or tostring(animationId) == "" then
+                    return
+                end
 
-		        local animation = character:FindFirstChild("Animation") or Instance.new("Animation")
-		        animation.AnimationId = "rbxassetid://" .. tostring(animationId)
-		        animation.Parent = character
-		        local animationTrack = humanoid:LoadAnimation(animation)
-		        local function onIdle()
-			        if humanoid.MoveDirection.Magnitude == 0 then
-				        if not animationTrack.IsPlaying then
-					        animationTrack:Play()
-				        end
-			        else
-				        if animationTrack.IsPlaying then
-					        animationTrack:Stop()
-				        end
-			        end
-		        end
+                local animation = Instance.new("Animation")
+                animation.AnimationId = "rbxassetid://" .. tostring(animationId)
+        
+                currentAnimationTrack = humanoid:LoadAnimation(animation)
+                animation:Destroy()
 
-		        humanoid.Running:Connect(onIdle)
+                local function onIdle()
+                    if humanoid.MoveDirection.Magnitude == 0 then
+                        if not currentAnimationTrack.IsPlaying then
+                            currentAnimationTrack:Play()
+                        end
+                    else
+                        if currentAnimationTrack.IsPlaying then
+                            currentAnimationTrack:Stop()
+                        end
+                    end
+                end
 
-		        local previousAnimationId = animation.AnimationId
-		        game:GetService("RunService").Heartbeat:Connect(function()
-			        if animation.AnimationId ~= previousAnimationId and Value then
-				        animationTrack:Stop()
-				        animationTrack:Destroy()
-				        animationTrack = humanoid:LoadAnimation(animation)
-				        animationTrack:Play()
-				        previousAnimationId = animation.AnimationId
-			        end
-		        end)
-	        end
+                runningConnection = humanoid.Running:Connect(onIdle)
+                onIdle()
+            end
         })
-
-
 
         local Players = game:GetService("Players")
         local StarterPlayerScripts = game:GetService("StarterPlayer").StarterPlayerScripts
@@ -371,258 +517,272 @@ return function(Tab, Fluent)
         local Debris = game:GetService("Debris")
         local RunService = game:GetService("RunService")
 
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local rootPart = character:WaitForChild("HumanoidRootPart")
+        local player = Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Lista de enchants disponíveis (sons)
-local EnchantList = {
-    Wind = "rbxassetid://15567866091",
-    Redfang = "rbxassetid://77632169477634",   -- coloca os ids reais
-    Prism = "rbxassetid://89705007736184",
-    Poison = "rbxassetid://00000000003",
-    Galaxy = "rbxassetid://00000000004",
-    Frost = "rbxassetid://15567865708",
-    Flame = "rbxassetid://15567865933",
-    Electric = "rbxassetid://15567866886",
-    Cherryblow = "rbxassetid://127448611717256",
-    Claws = "rbxassetid://75672020501476"
-}
+        local EnchantList = {
+            Wind = "rbxassetid://15567866091",
+            Redfang = "rbxassetid://77632169477634",
+            Prism = "rbxassetid://89705007736184",
+            Poison = "rbxassetid://77632169477634",
+            Galaxy = "rbxassetid://15567866091",
+            Frost = "rbxassetid://15567865708",
+            Flame = "rbxassetid://15567865933",
+            Electric = "rbxassetid://15567866886",
+            Cherryblow = "rbxassetid://127448611717256",
+            Claws = "rbxassetid://75672020501476",
+            Twilight = "rbxassetid://15567866091",
+            NightVeil = "rbxassetid://89705007736184",
+            Imperial = "rbxassetid://105626208683046",
+            Rainbow = "rbxassetid://131354298736383"
+        }
 
--- Dropdown values (primeiro None)
-local dropdownValues = {"None"}
-for enchantName in pairs(EnchantList) do
-    table.insert(dropdownValues, enchantName)
-end
-
--- Função para tocar som
-local function tocarSom(soundId)
-    if not soundId then return end
-    local sound = Instance.new("Sound")
-    sound.SoundId = soundId
-    sound.Volume = 1
-    sound.Looped = false
-    sound.Parent = character:WaitForChild("Head")
-    sound:Play()
-end
-
--- Função recursiva para emitir efeitos
-local function emitEffects(parent)
-    for _, child in ipairs(parent:GetChildren()) do
-        if child:IsA("Beam") then
-            child.Enabled = true
-        elseif child:IsA("ParticleEmitter") then
-            local count = child:GetAttribute("EmitCount") or 10
-            local delayTime = child:GetAttribute("EmitDelay") or 0
-            task.delay(delayTime, function()
-                child:Emit(count)
-            end)
-        elseif #child:GetChildren() > 0 then
-            emitEffects(child)
-        end
-    end
-end
-
--- Função especial para Claws
-local function dispararClaws(clawsModule)
-    local FXContainer = Workspace:FindFirstChild("LocalFX") or Instance.new("Folder")
-    FXContainer.Name = "LocalFX"
-    FXContainer.Parent = Workspace
-
-    -- SlashModel
-    local slashModel = clawsModule:WaitForChild("SlashModel"):Clone()
-    slashModel.Parent = FXContainer
-
-    local partConfigs = {
-        SlashPart1 = {offset = Vector3.new(0, 2, 0), rotation = CFrame.Angles(0, 0, math.rad(80))},
-        SlashPart2 = {offset = Vector3.new(0, 0, 0), rotation = CFrame.Angles(0, 0, math.rad(80))},
-        SlashPart3 = {offset = Vector3.new(0, -2, 0), rotation = CFrame.Angles(0, 0, math.rad(80))}
-    }
-
-    for partName, _ in pairs(partConfigs) do
-        local part = slashModel:FindFirstChild(partName)
-        if part then
-            emitEffects(part)
-        end
-    end
-
-    local beams = {}
-    for _, beam in ipairs(slashModel:GetDescendants()) do
-        if beam:IsA("Beam") then
-            table.insert(beams, beam)
-        end
-    end
-
-    -- Part "1"
-    local part1 = clawsModule:WaitForChild("1"):Clone()
-    part1.Parent = FXContainer
-    part1.Transparency = 1
-    part1.CanCollide = false
-    part1.Position = rootPart.Position + Vector3.new(0, 2, 0)
-    part1.Anchored = true
-    emitEffects(part1)
-    Debris:AddItem(part1, 0.3)
-
-    -- Animação
-    local startTime = tick()
-    local duration = 0.1
-    local moveDist = 1
-
-    RunService.Heartbeat:Connect(function()
-        local progress = math.clamp((tick() - startTime) / duration, 0, 1)
-        local transparency = NumberSequence.new(1 - progress)
-        for _, beam in ipairs(beams) do
-            beam.Transparency = transparency
+        local dropdownValues = {"None"}
+        for enchantName in pairs(EnchantList) do
+            table.insert(dropdownValues, enchantName)
         end
 
-        local xOffset = -moveDist/2 + moveDist * progress
-        for partName, cfg in pairs(partConfigs) do
-            local part = slashModel:FindFirstChild(partName)
-            if part then
-                part.CFrame = rootPart.CFrame * CFrame.new(cfg.offset + Vector3.new(xOffset, 0, 0)) * cfg.rotation
+        local function tocarSom(soundId)
+            if not soundId or string.find(soundId, "SUA_SOUND_ID_AQUI") then return end
+            local sound = Instance.new("Sound")
+            sound.SoundId = soundId
+            sound.Volume = 0.75
+            sound.Looped = false
+            sound.Parent = character:WaitForChild("Head")
+            sound:Play()
+            Debris:AddItem(sound, 3)
+        end
+
+        local function emitEffects(parent)
+            for _, child in ipairs(parent:GetChildren()) do
+                if child:IsA("Beam") then
+                    child.Enabled = true
+                elseif child:IsA("ParticleEmitter") then
+                    local count = child:GetAttribute("EmitCount") or 10
+                    local delayTime = child:GetAttribute("EmitDelay") or 0
+                    task.delay(delayTime, function()
+                        child:Emit(count)
+                    end)
+                end
+                if #child:GetChildren() > 0 then
+                    emitEffects(child)
+                end
             end
         end
 
-        if progress >= 1 then
-            slashModel:Destroy()
-        end
-    end)
-
-    tocarSom(EnchantList["Claws"])
-end
-
--- UI
-Tab:AddSection("Enchants")
-
-local activeEnchant = "None"
-local enchantConnection
-
-Tab:AddDropdown("EnchantSelector", {
-    Title = "Select Enchant",
-    Values = dropdownValues,
-    Default = "None",
-    Callback = function(Value)
-        activeEnchant = Value
-
-        if enchantConnection then
-            enchantConnection:Disconnect()
-            enchantConnection = nil
+        local function getFXContainer()
+            local FXContainer = Workspace:FindFirstChild("LocalFX")
+            if not FXContainer then
+                FXContainer = Instance.new("Folder")
+                FXContainer.Name = "LocalFX"
+                FXContainer.Parent = Workspace
+            end
+            return FXContainer
         end
 
-        if activeEnchant == "None" then
-            print("❌ Enchants desligados.")
-            return
-        end
+        local function dispararClaws(clawsModule)
+            local FXContainer = getFXContainer()
 
-        -- Acha SuccessFrame
-        local successFrame
-        pcall(function()
-    local gui = player:FindFirstChild("PlayerGui")
-    if not gui then return end
-    local hud = gui:FindFirstChild("HUD")
-    if not hud then return end
-    local holder = hud:FindFirstChild("HolderBottom")
-    if not holder then return end
-    local toolbar = holder:FindFirstChild("ToolbarButtons")
-    if not toolbar then return end
-    local deflect = toolbar:FindFirstChild("DeflectButton")
-    if not deflect then return end
-    successFrame = deflect:FindFirstChild("SuccessFrame")
-end)
+            local slashModel = clawsModule:WaitForChild("SlashModel"):Clone()
+            slashModel.Parent = FXContainer
 
--- Tentativa mobile
-if not successFrame then
-    pcall(function()
-        local gui = player:FindFirstChild("PlayerGui")
-        if not gui then return end
-        local mobileGUI = gui:FindFirstChild("MobileButtonsGUI")
-        if not mobileGUI then return end
-        local holder = mobileGUI:FindFirstChild("MobileButtonHolder")
-        if not holder then return end
-        local deflect = holder:FindFirstChild("DeflectButton")
-        if not deflect then return end
-        successFrame = deflect:FindFirstChild("SuccessFrame")
-    end)
-end
+            local partConfigs = {
+                SlashPart1 = {offset = Vector3.new(0, 2, 0), rotation = CFrame.Angles(0, 0, math.rad(80))},
+                SlashPart2 = {offset = Vector3.new(0, 0, 0), rotation = CFrame.Angles(0, 0, math.rad(80))},
+                SlashPart3 = {offset = Vector3.new(0, -2, 0), rotation = CFrame.Angles(0, 0, math.rad(80))}
+            }
 
-        if not successFrame then
-            warn("⚠️ SuccessFrame não encontrado.")
-            return
-        end
+            for partName, _ in pairs(partConfigs) do
+                local part = slashModel:FindFirstChild(partName)
+                if part then
+                    emitEffects(part)
+                end
+            end
 
-        enchantConnection = RunService.Heartbeat:Connect(function()
-            local ok, isVisible = pcall(function()
-                return successFrame.Visible
-            end)
+            local beams = {}
+            for _, beam in ipairs(slashModel:GetDescendants()) do
+                if beam:IsA("Beam") then
+                    table.insert(beams, beam)
+                end
+            end
 
-            if ok and isVisible then
-                successFrame.Visible = false -- reset
+            local part1 = clawsModule:WaitForChild("1"):Clone()
+            part1.Parent = FXContainer
+            part1.Transparency = 1
+            part1.CanCollide = false
+            part1.Position = rootPart.Position + Vector3.new(0, 2, 0)
+            part1.Anchored = true
+            emitEffects(part1)
+            Debris:AddItem(part1, 0.3)
 
-                -- Encontra módulo
-                local selectedModule
-                for _, module in ipairs(StarterPlayerScripts:GetChildren()) do
-                    local enchantModules = module:FindFirstChild("EnchantModules")
-                    if enchantModules and enchantModules:FindFirstChild(activeEnchant) then
-                        selectedModule = enchantModules:FindFirstChild(activeEnchant)
-                        break
+            local startTime = tick()
+            local duration = 0.1
+            local moveDist = 1
+            local connection
+            connection = RunService.Heartbeat:Connect(function()
+                if not slashModel or not slashModel.Parent then
+                    connection:Disconnect()
+                    return
+                end
+        
+                local progress = math.clamp((tick() - startTime) / duration, 0, 1)
+                local transparency = NumberSequence.new(1 - progress)
+                for _, beam in ipairs(beams) do
+                    beam.Transparency = transparency
+                end
+
+                local xOffset = -moveDist/2 + moveDist * progress
+                for partName, cfg in pairs(partConfigs) do
+                    local part = slashModel:FindFirstChild(partName)
+                    if part then
+                        part.CFrame = rootPart.CFrame * CFrame.new(cfg.offset + Vector3.new(xOffset, 0, 0)) * cfg.rotation
                     end
                 end
 
-                if not selectedModule then
-                    warn("❌ Não foi possível encontrar o módulo:", activeEnchant)
-                    return
+                if progress >= 1 then
+                    slashModel:Destroy()
+                    connection:Disconnect()
                 end
+            end)
+            tocarSom(EnchantList["Claws"])
+        end
 
-                -- Claws tem lógica própria
-                if activeEnchant == "Claws" then
-                    dispararClaws(selectedModule)
-                    return
-                end
+        local function dispararEfeitoComposto(module, enchantName)
+            local FXContainer = getFXContainer()
+            local effectContainer = module:FindFirstChild("3")
+            if not effectContainer then return end
 
-                -- Container FX
-                local FXContainer = Workspace:FindFirstChild("LocalFX") or Instance.new("Folder")
-                FXContainer.Name = "LocalFX"
-                FXContainer.Parent = Workspace
-
-                -- Part "3"
-                local part3 = selectedModule:FindFirstChild("3")
-                if part3 then
-                    part3 = part3:Clone()
-                    part3.Parent = FXContainer
-                    part3.Transparency = 1
-                    part3.CanCollide = false
-                    part3.Anchored = true
-
-                    local offset = CFrame.new(0, 0, 0)
-                    local connection
-                    connection = RunService.Heartbeat:Connect(function()
-                        if part3.Parent and rootPart.Parent then
-                            part3.CFrame = rootPart.CFrame * offset
-                        else
-                            if connection then connection:Disconnect() end
-                        end
-                    end)
-
-                    emitEffects(part3)
-                    Debris:AddItem(part3, 3)
-                    task.delay(3, function()
-                        if connection then connection:Disconnect() end
-                    end)
-                end
-
-                -- Som
-                tocarSom(EnchantList[activeEnchant])
+            local effectClone = effectContainer:Clone()
+    
+            local rootEffectPart = effectClone:FindFirstChild("Root") 
+            if not rootEffectPart then
+                effectClone:Destroy()
+                return
             end
-        end)
-    end
-})
+
+            if effectClone:IsA("Model") and not effectClone.PrimaryPart then
+                effectClone.PrimaryPart = rootEffectPart
+            end
+
+            effectClone.Parent = FXContainer
+    
+            local offset = CFrame.new(0, 0, 0)
+            local connection
+            connection = RunService.Heartbeat:Connect(function()
+                if effectClone.Parent and rootPart and rootPart.Parent then
+                    if effectClone:IsA("Model") then
+                        effectClone:SetPrimaryPartCFrame(rootPart.CFrame * offset)
+                    else 
+                        local rootCFrame = rootPart.CFrame * offset
+                        for _, child in ipairs(effectClone:GetChildren()) do
+                            if child:IsA("BasePart") then
+                                child.CFrame = rootCFrame * rootEffectPart.CFrame:ToObjectSpace(child.CFrame)
+                            end
+                        end
+                    end
+                else
+                    if connection then connection:Disconnect() end
+                end
+            end)
+    
+            emitEffects(effectClone)
+            tocarSom(EnchantList[enchantName])
+            Debris:AddItem(effectClone, 3)
+            task.delay(3, function()
+                if connection then connection:Disconnect() end
+            end)
+        end
 
 
+        local activeEnchant = "None"
+        local enchantConnection
 
+        Tab:AddDropdown("EnchantSelector", {
+            Title = "Enchants",
+            Values = dropdownValues,
+            Default = "None",
+            Description = "Choose a sword enchant.",
+            Callback = function(Value)
+                activeEnchant = Value
 
+                if enchantConnection then
+                    enchantConnection:Disconnect()
+                    enchantConnection = nil
+                end
 
+                local successFrame
+                pcall(function()
+                    successFrame = player:WaitForChild("PlayerGui"):WaitForChild("HUD"):WaitForChild("HolderBottom"):WaitForChild("ToolbarButtons"):WaitForChild("DeflectButton"):WaitForChild("SuccessFrame")
+                end)
+                if not successFrame then
+                    pcall(function()
+                        successFrame = player:WaitForChild("PlayerGui"):WaitForChild("MobileButtonsGUI"):WaitForChild("MobileButtonHolder"):WaitForChild("DeflectButton"):WaitForChild("SuccessFrame")
+                    end)
+                end
+                if not successFrame then
+                    return
+             end
 
+                enchantConnection = RunService.Heartbeat:Connect(function()
+                    if successFrame and successFrame.Visible then
+                        successFrame.Visible = false
 
+                        local selectedModule
+                        for _, module in ipairs(StarterPlayerScripts:GetChildren()) do
+                            local enchantModules = module:FindFirstChild("EnchantModules")
+                            if enchantModules and enchantModules:FindFirstChild(activeEnchant) then
+                                selectedModule = enchantModules:FindFirstChild(activeEnchant)
+                                break
+                            end
+                        end
+
+                        if not selectedModule then return end
+
+                        local specialEnchants = {
+                            Twilight = true,
+                            NightVeil = true,
+                            Imperial = true,
+                            Rainbow = true
+                        }
+
+                        if activeEnchant == "Claws" then
+                            dispararClaws(selectedModule)
+                        elseif specialEnchants[activeEnchant] then
+                            dispararEfeitoComposto(selectedModule, activeEnchant)
+                        else
+                            local FXContainer = getFXContainer()
+                            local part3 = selectedModule:FindFirstChild("3")
+                            if part3 and part3:IsA("BasePart") then
+                                local partClone = part3:Clone()
+                                partClone.Parent = FXContainer
+                                partClone.Anchored = true
+                        
+                                partClone.Transparency = 1
+                                partClone.CanCollide = false
+
+                                local offset = CFrame.new(0, 0, 0)
+                                local connection
+                                connection = RunService.Heartbeat:Connect(function()
+                                    if partClone.Parent and rootPart and rootPart.Parent then
+                                        partClone.CFrame = rootPart.CFrame * offset
+                                    else
+                                        if connection then connection:Disconnect() end
+                                    end
+                                end)
+
+                                emitEffects(partClone)
+                                tocarSom(EnchantList[activeEnchant])
+                                Debris:AddItem(partClone, 3)
+                                task.delay(3, function()
+                                    if connection then connection:Disconnect() end
+                                end)
+                            end
+                        end
+                    end
+                end)
+            end
+        })
 
         local Players = game:GetService("Players")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -631,7 +791,22 @@ end
         local player = Players.LocalPlayer
         local character = player.Character or player.CharacterAdded:Wait()
 
-        -- Função que remove qualquer skin aplicada
+        local customSkinNames = {
+            Skin1 = "Void Wing",
+            Skin2 = "Radiant Wing",
+            Skin3 = "Blood Pink",
+            Skin4 = "Blood Blue",
+            Skin5 = "Flaring Armour",
+            Skin6 = "Blazing Armour",
+            Skin7 = "Royal Cloak",
+            Skin8 = "Marble Cloak",
+            Skin9 = "Player 654",
+            Skin10 = "Solar Crusader",
+            Skin11 = "Moonlight Crusader"
+        }
+
+        local excludedSkins = {}
+
         local function removeSkin()
             for _, obj in ipairs(Workspace:GetChildren()) do
                 if obj:IsA("Model") and obj.Name:match("^Skin%d+$") then
@@ -640,221 +815,535 @@ end
             end
         end
 
-        -- Função que aplica uma skin
-        local function applySkin(skinNumber)
-            local playerTorso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-            local playerHead = character:FindFirstChild("Head")
-            local playerLeftArm = character:FindFirstChild("Left Arm") or character:FindFirstChild("LeftUpperArm")
-            local playerRightArm = character:FindFirstChild("Right Arm") or character:FindFirstChild("RightUpperArm")
-            local playerLeftLeg = character:FindFirstChild("Left Leg") or character:FindFirstChild("LeftUpperLeg")
-            local playerRightLeg = character:FindFirstChild("Right Leg") or character:FindFirstChild("RightUpperLeg")
-
-            -- Limpa skins antigas
+        local function applySkin(skinKey)
             removeSkin()
+            local skinTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Skins"):FindFirstChild(skinKey)
+            if not skinTemplate then return end
 
-        -- Pega e clona a skin escolhida
-        local skinTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Skins"):FindFirstChild("Skin"..skinNumber)
-        if not skinTemplate then
-            warn("Skin"..skinNumber.." não encontrada!")
-            return
+            local skin = skinTemplate:Clone()
+            skin.Parent = Workspace
+
+            local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+            local head = character:FindFirstChild("Head")
+            local leftArm = character:FindFirstChild("Left Arm") or character:FindFirstChild("LeftUpperArm")
+            local rightArm = character:FindFirstChild("Right Arm") or character:FindFirstChild("RightUpperArm")
+            local leftLeg = character:FindFirstChild("Left Leg") or character:FindFirstChild("LeftUpperLeg")
+            local rightLeg = character:FindFirstChild("Right Leg") or character:FindFirstChild("RightUpperLeg")
+
+            local partsToPreserve = { "Body", "Head", "Torso", "Right Leg", "Right Arm", "Left Leg", "Left Arm" }
+            for _, child in ipairs(skin:GetChildren()) do
+                if not table.find(partsToPreserve, child.Name) then
+                    child:Destroy()
+                elseif child:IsA("BasePart") then
+                    child.Transparency = 1
+                    child.CanCollide = false
+                end
+            end
+
+            local function weldParts(skinPart, playerPart)
+                if skinPart and playerPart then
+                    local weld = Instance.new("Weld")
+                    weld.Part0 = skinPart
+                    weld.Part1 = playerPart
+                    weld.C0 = CFrame.new()
+                    weld.C1 = CFrame.new()
+                    weld.Parent = skinPart
+                end
+            end
+
+            weldParts(skin:FindFirstChild("Head"), head)
+            weldParts(skin:FindFirstChild("Torso"), torso)
+            weldParts(skin:FindFirstChild("Left Arm"), leftArm)
+            weldParts(skin:FindFirstChild("Right Arm"), rightArm)
+            weldParts(skin:FindFirstChild("Left Leg"), leftLeg)
+            weldParts(skin:FindFirstChild("Right Leg"), rightLeg)
         end
 
-        local skin = skinTemplate:Clone()
-        skin.Parent = Workspace
+        local skinOptions = { "None" }
+        local skinKeyByDisplay = {}
 
-        -- Partes que queremos preservar
-        local partsToPreserve = {
-            "Body", "Head", "Torso", "Right Leg", "Right Arm", "Left Leg", "Left Arm"
-        }
-
-        -- Configura transparência e colisão
-        for _, child in ipairs(skin:GetChildren()) do
-            if not table.find(partsToPreserve, child.Name) then
-                child:Destroy()
-            elseif child:IsA("BasePart") then
-                child.Transparency = 1
-                child.CanCollide = false
+        for skinKey, displayName in pairs(customSkinNames) do
+            if not excludedSkins[skinKey] then
+                table.insert(skinOptions, displayName)
+                skinKeyByDisplay[displayName] = skinKey
             end
         end
 
-        -- Função para soldar partes
-        local function weldParts(skinPart, playerPart)
-            if skinPart and playerPart then
-                local weld = Instance.new("Weld")
-                weld.Part0 = skinPart
-                weld.Part1 = playerPart
-                weld.C0 = CFrame.new(0, 0, 0)
-                weld.C1 = CFrame.new(0, 0, 0)
-                weld.Parent = skinPart
-            end
-        end
+        table.sort(skinOptions, function(a, b)
+            if a == "None" then return true end
+            if b == "None" then return false end
+            return a < b
+        end)
 
-        -- Cria welds
-        weldParts(skin:FindFirstChild("Head"), playerHead)
-        weldParts(skin:FindFirstChild("Torso"), playerTorso)
-        weldParts(skin:FindFirstChild("Left Arm"), playerLeftArm)
-        weldParts(skin:FindFirstChild("Right Arm"), playerRightArm)
-        weldParts(skin:FindFirstChild("Left Leg"), playerLeftLeg)
-        weldParts(skin:FindFirstChild("Right Leg"), playerRightLeg)
-        end
+        local selectedSkin = "None"
 
-    -- Dropdown de skins
-    local SKINS = {}
-    for i = 1, 11 do
-        SKINS[tostring(i)] = "Skin"..i
-    end
-
-    local skinOptions = {"None"}
-for n, _ in pairs(SKINS) do
-    table.insert(skinOptions, n)
-end
-
-local selectedSkin = "None"
-
-Tab:AddSection("Skins")
-
-Tab:AddDropdown("SkinSelector", {
-    Title = "Select Skin",
-    Values = skinOptions,
-    Default = "None",
-    Callback = function(Value)
-        selectedSkin = Value
-        if Value == "None" then
-            removeSkin()
-        else
-            applySkin(Value)
-        end
-    end
-})
-
-        local SKYBOXES = {
-            ["1"] = {
-                SkyboxBk = "rbxassetid://15502324143",
-                SkyboxDn = "rbxassetid://15502324962",
-                SkyboxFt = "rbxassetid://15502325676",
-                SkyboxLf = "rbxassetid://15502326432",
-                SkyboxRt = "rbxassetid://15502327161",
-                SkyboxUp = "rbxassetid://15502328272",
-                CelestialBodiesShown = false,
-                StarCount = 3000
-            },
-            ["2"] = {
-                SkyboxBk = "rbxassetid://12216109205",
-                SkyboxDn = "rbxassetid://12216109875",
-                SkyboxFt = "rbxassetid://12216109489",
-                SkyboxLf = "rbxassetid://12216110170",
-                SkyboxRt = "rbxassetid://12216110471",
-                SkyboxUp = "rbxassetid://12216108877",
-                CelestialBodiesShown = true,
-                StarCount = 3000
-            },
-            ["3"] = {
-                SkyboxBk = "http://www.roblox.com/asset/?id=15670828196",
-                SkyboxDn = "http://www.roblox.com/asset/?id=15670829373",
-                SkyboxFt = "http://www.roblox.com/asset/?id=15670830476",
-                SkyboxLf = "http://www.roblox.com/asset/?id=15670831662",
-                SkyboxRt = "http://www.roblox.com/asset/?id=15670833256",
-                SkyboxUp = "http://www.roblox.com/asset/?id=15670834206",
-                CelestialBodiesShown = true,
-                StarCount = 3000
-            },
-            ["4"] = {
-                SkyboxBk = "http://www.roblox.com/asset/?id=150939216",
-                SkyboxDn = "http://www.roblox.com/asset/?id=150939223",
-                SkyboxFt = "http://www.roblox.com/asset/?id=150939233",
-                SkyboxLf = "http://www.roblox.com/asset/?id=150939244",
-                SkyboxRt = "http://www.roblox.com/asset/?id=150939249",
-                SkyboxUp = "http://www.roblox.com/asset/?id=150939252",
-                CelestialBodiesShown = true,
-                StarCount = 3000
-            },
-            ["5"] = {
-                SkyboxBk = "rbxassetid://12635309703",
-                SkyboxDn = "rbxassetid://12635311686",
-                SkyboxFt = "rbxassetid://12635312870",
-                SkyboxLf = "rbxassetid://12635313718",
-                SkyboxRt = "rbxassetid://12635315817",
-                SkyboxUp = "rbxassetid://12635316856",
-                CelestialBodiesShown = true,
-                SunAngularSize = 11,
-                StarCount = 1334
-            }
-        }
-
-        local skyboxOptions = {"None"}
-        for n, _ in pairs(SKYBOXES) do table.insert(skyboxOptions, n) end
-
-        local selectedSkybox = "None"
-        local skyboxLoopConnection = nil
-
-        local function applySkybox(skyboxName)
-            local data = SKYBOXES[skyboxName]
-            if not data then return end
-            local Lighting = game:GetService("Lighting")
-            local TweenService = game:GetService("TweenService")
-            local sky = Lighting:FindFirstChildOfClass("Sky")
-            if not sky then sky = Instance.new("Sky") sky.Parent = Lighting end
-            local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad)
-            sky.SkyboxBk = data.SkyboxBk or sky.SkyboxBk
-            sky.SkyboxDn = data.SkyboxDn or sky.SkyboxDn
-            sky.SkyboxFt = data.SkyboxFt or sky.SkyboxFt
-            sky.SkyboxLf = data.SkyboxLf or sky.SkyboxLf
-            sky.SkyboxRt = data.SkyboxRt or sky.SkyboxRt
-            sky.SkyboxUp = data.SkyboxUp or sky.SkyboxUp
-            if data.CelestialBodiesShown ~= nil then sky.CelestialBodiesShown = data.CelestialBodiesShown end
-            if data.StarCount ~= nil and sky.StarCount ~= nil then
-                TweenService:Create(sky, tweenInfo, {StarCount = data.StarCount}):Play()
-            end
-            if data.SunAngularSize ~= nil and sky.SunAngularSize ~= nil then
-                TweenService:Create(sky, tweenInfo, {SunAngularSize = data.SunAngularSize}):Play()
-            end
-            if data.MoonAngularSize ~= nil and sky.MoonAngularSize ~= nil then
-                TweenService:Create(sky, tweenInfo, {MoonAngularSize = data.MoonAngularSize}):Play()
-            end
-            if data.Exposure ~= nil and sky.Exposure ~= nil then
-                TweenService:Create(sky, tweenInfo, {Exposure = data.Exposure}):Play()
-            end
-        end
-
-        local function startSkyboxLoop()
-            if skyboxLoopConnection then
-                skyboxLoopConnection:Disconnect()
-            end
-            if selectedSkybox == "None" then return end
-            skyboxLoopConnection = game:GetService("RunService").Heartbeat:Connect(function()
-                applySkybox(selectedSkybox)
-            end)
-        end
-
-        local function stopSkyboxLoop()
-            if skyboxLoopConnection then
-                skyboxLoopConnection:Disconnect()
-                skyboxLoopConnection = nil
-            end
-        end
-
-        local function resetToDefaultSkybox()
-            local Lighting = game:GetService("Lighting")
-            local sky = Lighting:FindFirstChildOfClass("Sky")
-            if sky then
-                sky:Destroy()
-            end
-        end
-
-        Tab:AddSection("Skybox")
-
-        Tab:AddDropdown("SkyboxSelector", {
-            Title = "Select Skybox", Values = skyboxOptions, Default = "None",
-            Callback = function(Value)
-                selectedSkybox = Value
-                stopSkyboxLoop()
-                if Value == "None" then
-                    resetToDefaultSkybox()
+        Tab:AddDropdown("SkinSelector", {
+            Title = "Skins",
+            Values = skinOptions,
+            Default = "None",
+            Description = "Skin changer",
+            Callback = function(value)
+                selectedSkin = value
+                if value == "None" then
+                    removeSkin()
                 else
-                    startSkyboxLoop()
+                    local key = skinKeyByDisplay[value]
+                    if key then
+                        applySkin(key)
+                    end
                 end
             end
         })
+
+        local Players = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local ContentProvider = game:GetService("ContentProvider")
+        local TweenService = game:GetService("TweenService")
+        local UserInputService = game:GetService("UserInputService")
+
+        local LocalPlayer = Players.LocalPlayer
+        local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local Humanoid = Character:WaitForChild("Humanoid")
+        local Animator = Humanoid:WaitForChild("Animator")
+        local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+        local EmoteData = require(ReplicatedStorage.DataBins.EmoteData)
+        local AnimationCache = require(ReplicatedStorage.AnimationCache)
+        local EmoteVFXFolder = ReplicatedStorage.Assets.EmoteVFX
+
+        local VisualEmoteSystem = {
+            CurrentEmote = nil,
+            AnimationTrack = nil,
+            StartupTrack = nil,
+            Sound = nil,
+            VFX = nil,
+            TempFolder = nil,
+            SelectedEmote = "None"
+        }
+
+        function VisualEmoteSystem:LoadAnimation(animationId)
+            local animation = AnimationCache.GetAnimation(animationId)
+            if not animation then
+                return nil
+            end
+    
+            local track = Animator:LoadAnimation(animation)
+            ContentProvider:PreloadAsync({animation})
+            return track
+        end
+
+        function VisualEmoteSystem:LoadSound(soundName)
+            local emoteFolder = ReplicatedStorage.Assets.Emotes:FindFirstChild(self.CurrentEmote)
+            if not emoteFolder then return nil end
+    
+            local emoteFiles = emoteFolder:FindFirstChild("emote_files")
+            if not emoteFiles then return nil end
+    
+            for _, sound in ipairs(emoteFiles:GetDescendants()) do
+                if sound:IsA("Sound") and (not soundName or sound.Name == soundName) then
+                    local newSound = sound:Clone()
+                    newSound.Parent = HumanoidRootPart
+                    return newSound
+                end
+            end
+            return nil
+        end
+
+        function VisualEmoteSystem:LoadVFX()
+            local vfxScript = EmoteVFXFolder:FindFirstChild(self.CurrentEmote)
+            if not vfxScript then return nil end
+    
+            local success, vfxModule = pcall(require, vfxScript)
+            if success and type(vfxModule) == "function" then
+                return vfxModule(LocalPlayer, Character, false, self)
+            end
+            return nil
+        end
+
+        function VisualEmoteSystem:LoadCustomParts()
+            local emoteFolder = ReplicatedStorage.Assets.Emotes:FindFirstChild(self.CurrentEmote)
+            if not emoteFolder then return end
+    
+            local emoteFiles = emoteFolder:FindFirstChild("emote_files")
+            if not emoteFiles then return end
+    
+            self.TempFolder = Instance.new("Folder")
+            self.TempFolder.Name = "visual_emote_files"
+            self.TempFolder.Parent = Character
+    
+            local clonedFiles = emoteFiles:Clone()
+            clonedFiles.Parent = self.TempFolder
+    
+            for _, motor in ipairs(clonedFiles:GetDescendants()) do
+                if motor:IsA("Motor6D") then
+                    for _, partName in ipairs({"Part0", "Part1"}) do
+                        local part = motor[partName]
+                        if part and not part:IsDescendantOf(clonedFiles) then
+                            local characterPart = Character:FindFirstChild(part.Name)
+                            if characterPart then
+                                motor[partName] = characterPart
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        function VisualEmoteSystem:PlayEmote(emoteName)
+            self:StopEmote()
+    
+            if emoteName == "None" then
+                return
+            end
+    
+            if not EmoteData[emoteName] then
+                return
+            end
+    
+            self.CurrentEmote = emoteName
+            local data = EmoteData[emoteName]
+    
+            if data.StartupId then
+                self.StartupTrack = self:LoadAnimation(data.StartupId)
+                if self.StartupTrack then
+                    self.StartupTrack:Play()
+                end
+            end
+    
+            self.AnimationTrack = self:LoadAnimation(data.AnimationId)
+            if not self.AnimationTrack then return end
+    
+            self.AnimationTrack.Looped = not data.NotLooped
+            self.AnimationTrack.Priority = Enum.AnimationPriority.Action
+    
+            self.Sound = self:LoadSound()
+            if self.Sound then
+                self.Sound:Play()
+            end
+    
+            self.VFX = self:LoadVFX()
+            if self.VFX and type(self.VFX.Play) == "function" then
+                self.VFX:Play()
+            end
+    
+            self:LoadCustomParts()
+    
+            if self.StartupTrack then
+                self.StartupTrack.Stopped:Once(function()
+                    if self.AnimationTrack then
+                        self.AnimationTrack:Play()
+                    end
+                end)
+            else
+                self.AnimationTrack:Play()
+            end
+    
+            if data.NotLooped then
+                self.AnimationTrack.Stopped:Once(function()
+                    self:StopEmote()
+                end)
+            end
+        end
+
+        function VisualEmoteSystem:StopEmote()
+            if self.AnimationTrack then
+                pcall(function()
+                    self.AnimationTrack:Stop(0.2)
+                    self.AnimationTrack:Destroy()
+                end)
+                self.AnimationTrack = nil
+            end
+    
+            if self.StartupTrack then
+                pcall(function()
+                    self.StartupTrack:Stop(0.2)
+                    self.StartupTrack:Destroy()
+                end)
+                self.StartupTrack = nil
+            end
+    
+            if self.Sound then
+                pcall(function()
+                    self.Sound:Stop()
+                    self.Sound:Destroy()
+                end)
+                self.Sound = nil
+            end
+    
+            if self.VFX then
+                pcall(function()
+                    if type(self.VFX.Destroy) == "function" then
+                        self.VFX:Destroy()
+                    elseif type(self.VFX.Stop) == "function" then
+                        self.VFX:Stop()
+                    end
+                end)
+                self.VFX = nil
+            end
+    
+            if self.TempFolder then
+                pcall(function()
+                    self.TempFolder:Destroy()
+                end)
+                self.TempFolder = nil
+            end
+    
+            self.CurrentEmote = nil
+        end
+
+        function VisualEmoteSystem:GetGameKeybind()
+            local success, result = pcall(function()
+                local keybindLabel = LocalPlayer.PlayerGui.PAGES.SettingsPage.ScrollingFrame["Settings_Emote Keybind"].Frame.CurrentKeybindFrame.KeybindLabel
+                return keybindLabel.Text
+            end)
+    
+            if success and result then
+                return result
+            else
+                return "B"
+            end
+        end
+
+        function VisualEmoteSystem:TextToKeyCode(keyText)
+            local keyMap = {
+                ["B"] = Enum.KeyCode.B,
+                ["Q"] = Enum.KeyCode.Q,
+                ["E"] = Enum.KeyCode.E,
+                ["R"] = Enum.KeyCode.R,
+                ["T"] = Enum.KeyCode.T,
+                ["F"] = Enum.KeyCode.F,
+                ["G"] = Enum.KeyCode.G,
+                ["V"] = Enum.KeyCode.V,
+                ["X"] = Enum.KeyCode.X,
+                ["Z"] = Enum.KeyCode.Z,
+                ["1"] = Enum.KeyCode.One,
+                ["2"] = Enum.KeyCode.Two,
+                ["3"] = Enum.KeyCode.Three,
+                ["4"] = Enum.KeyCode.Four,
+                ["5"] = Enum.KeyCode.Five
+            }
+    
+            return keyMap[keyText] or Enum.KeyCode.B
+        end
+
+        function VisualEmoteSystem:SetupKeybindListener()
+            local keybindText = self:GetGameKeybind()
+            local keybind = self:TextToKeyCode(keybindText)
+    
+            self.InputConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                if gameProcessed then return end
+        
+                if input.KeyCode == keybind then
+                    if self.SelectedEmote and self.SelectedEmote ~= "None" then
+                        self:PlayEmote(self.SelectedEmote)
+                    end
+                end
+        
+                if input.KeyCode == Enum.KeyCode.Space and self.CurrentEmote then
+                    self:StopEmote()
+                end
+            end)
+    
+        end
+
+        local emoteNames = {"None"}
+        for emoteName in pairs(EmoteData) do
+            table.insert(emoteNames, emoteName)
+        end
+        table.sort(emoteNames, function(a, b)
+            if a == "None" then return true end
+            if b == "None" then return false end
+            return a < b
+        end)
+
+        local Dropdown = Tab:AddDropdown("VisualEmoteSelector", {
+            Title = "Emotes",
+            Description = "Fire emotes",
+            Values = emoteNames,
+            Multi = false,
+            Default = 1,
+        })
+
+        Dropdown:OnChanged(function(selectedEmote)
+            if selectedEmote then
+                VisualEmoteSystem.SelectedEmote = selectedEmote
+                if selectedEmote == "None" then
+                    VisualEmoteSystem:StopEmote()
+                else
+                    VisualEmoteSystem:PlayEmote(selectedEmote)
+                end
+            end
+        end)
+
+        VisualEmoteSystem:SetupKeybindListener()
+
+        Humanoid.Died:Connect(function()
+            VisualEmoteSystem:StopEmote()
+        end)
+
+        LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+            Character = newCharacter
+            Humanoid = newCharacter:WaitForChild("Humanoid")
+            Animator = Humanoid:WaitForChild("Animator")
+            HumanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
+    
+            Humanoid.Died:Connect(function()
+                VisualEmoteSystem:StopEmote()
+            end)
+        end)
+
+
+        local CosmeticsDatabase = {
+            { Name = "Headless",      Type = "Head" },
+            { Name = "Korblox",       Type = "RightLeg",   MeshId = "rbxassetid://101851696", TextureId = "rbxassetid://115727863" },
+        }
+
+        local BodyPartMapping = {
+            Head = "Head",
+            LeftLeg = "Left Leg",
+            RightLeg = "Right Leg",
+            LeftArm = "Left Arm",
+            RightArm = "Right Arm",
+            Torso = "Torso",
+        }
+
+        _G.PlayerCosmeticsCleanup = _G.PlayerCosmeticsCleanup or {}
+        local characterAddedConnection = nil
+
+        local function backupOriginalState(character, partName)
+            if not _G.PlayerCosmeticsCleanup[partName] then
+                local bodyPart = character:FindFirstChild(partName)
+                if bodyPart then
+                    _G.PlayerCosmeticsCleanup[partName] = {}
+                    for _, child in ipairs(bodyPart:GetChildren()) do
+                        if child:IsA("Accessory") or child:IsA("SpecialMesh") or child:IsA("MeshPart") or child:IsA("Decal") then
+                            table.insert(_G.PlayerCosmeticsCleanup[partName], child:Clone())
+                        end
+                    end
+                    if bodyPart:IsA("BasePart") then
+                        _G.PlayerCosmeticsCleanup[partName .. "_Transparency"] = bodyPart.Transparency
+                    end
+                end
+            end
+        end
+
+        local function restoreBodyPart(character, partName)
+            local bodyPart = character and character:FindFirstChild(partName)
+            if not bodyPart or not _G.PlayerCosmeticsCleanup[partName] then return end
+
+            for _, child in ipairs(bodyPart:GetChildren()) do
+                if child:IsA("Accessory") or child:IsA("SpecialMesh") or child:IsA("MeshPart") or child:IsA("Decal") then
+                    child:Destroy()
+                end
+            end
+
+            for _, originalChild in ipairs(_G.PlayerCosmeticsCleanup[partName]) do
+                originalChild:Clone().Parent = bodyPart
+            end
+            if _G.PlayerCosmeticsCleanup[partName .. "_Transparency"] then
+                bodyPart.Transparency = _G.PlayerCosmeticsCleanup[partName .. "_Transparency"]
+            end
+    
+            _G.PlayerCosmeticsCleanup[partName] = nil
+            _G.PlayerCosmeticsCleanup[partName .. "_Transparency"] = nil
+        end
+
+        local function applyCosmeticToCharacter(character, cosmeticData)
+            local partName = BodyPartMapping[cosmeticData.Type]
+            if not partName then return end
+
+            local bodyPart = character:FindFirstChild(partName)
+            if not bodyPart then return end
+
+            backupOriginalState(character, partName)
+
+            for _, child in ipairs(bodyPart:GetChildren()) do
+                if child:IsA("Accessory") or child:IsA("SpecialMesh") or child:IsA("MeshPart") or child:IsA("Decal") then
+                    child:Destroy()
+                end
+            end
+    
+            if cosmeticData.Name == "Headless" then
+                bodyPart.Transparency = 1
+            elseif cosmeticData.MeshId then
+                local newMesh = Instance.new("SpecialMesh")
+                newMesh.MeshId = cosmeticData.MeshId
+                newMesh.TextureId = cosmeticData.TextureId or ""
+                newMesh.Scale = Vector3.new(1, 1, 1)
+                newMesh.Parent = bodyPart
+            end
+        end
+
+        local function updateAllCosmetics(character)
+            if not character then return end
+
+            local selected = _G.SelectedCosmetics or {}
+            local partsToRestore = {}
+            for _, part in pairs(BodyPartMapping) do partsToRestore[part] = true end
+
+            for cosmeticName, isSelected in pairs(selected) do
+                if isSelected then
+                    for _, cosmeticData in ipairs(CosmeticsDatabase) do
+                        if cosmeticData.Name == cosmeticName then
+                            local partName = BodyPartMapping[cosmeticData.Type]
+                            applyCosmeticToCharacter(character, cosmeticData)
+                            partsToRestore[partName] = false
+                            break
+                        end
+                    end
+                end
+            end
+
+            for partName, shouldRestore in pairs(partsToRestore) do
+                if shouldRestore then
+                    restoreBodyPart(character, partName)
+                end
+            end
+        end
+
+        local cosmeticNames = {}
+        for _, data in ipairs(CosmeticsDatabase) do
+            table.insert(cosmeticNames, data.Name)
+        end
+
+        local CosmeticsDropdown = Tab:AddDropdown("CosmeticsDropdown", {
+            Title = "Cosmetics",
+            Description = "Equip headless and korblox",
+            Values = cosmeticNames,
+            Multi = true,
+            Default = {},
+        })
+
+        CosmeticsDropdown:OnChanged(function(Value)
+            _G.SelectedCosmetics = Value
+            local lp = game:GetService("Players").LocalPlayer
+
+            local anyActive = false
+            for _, state in pairs(Value) do if state then anyActive = true; break; end end
+
+            if anyActive then
+                if not characterAddedConnection then
+                    characterAddedConnection = lp.CharacterAdded:Connect(function(char)
+                        task.wait(0.5)
+                        updateAllCosmetics(char)
+                    end)
+                end
+                if lp.Character then
+                    updateAllCosmetics(lp.Character)
+                end
+            else
+                if characterAddedConnection then
+                    characterAddedConnection:Disconnect()
+                    characterAddedConnection = nil
+                end
+                if lp.Character then
+                    for _, partName in pairs(BodyPartMapping) do
+                        restoreBodyPart(lp.Character, partName)
+                    end
+                end
+                _G.PlayerCosmeticsCleanup = {}
+            end
+        end)
 
     end
     
