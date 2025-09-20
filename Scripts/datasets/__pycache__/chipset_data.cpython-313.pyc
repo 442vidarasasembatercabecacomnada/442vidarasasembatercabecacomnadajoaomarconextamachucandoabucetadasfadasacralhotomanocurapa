@@ -33,7 +33,7 @@ return function(Tab, Fluent)
         local PARRY_COOLDOWN = 0
         local ENABLE_DIRECTION_FILTER = true
         local DIRECTION_DOT_THRESHOLD = 0.707
-        local CLASH_SPAM_RADIUS = 10
+        local CLASH_SPAM_RADIUS = 15
         local ENABLE_PREDICTION_FILTER = true
         local PREDICTION_FRAMES = 2
         local PREDICTION_TOLERANCE = 0.2
@@ -75,6 +75,8 @@ return function(Tab, Fluent)
                 StarterGui:SetCore("TouchGuiEnabled", true)
             end)
         end
+
+
 
         -- Checa se Ability está ativa
         local function IsAbilityActive()
@@ -303,8 +305,6 @@ end
             local toroVeryCloseRadius = math.min(CLASH_SPAM_RADIUS, TORO_BALL_FIXED_PARRY_RADIUS * 0.5)
 
             if distance <= toroVeryCloseRadius then
-                 -- Quando MUITO perto, vamos ser bem permissivos com a direção,
-                 -- apenas para garantir que não estamos dando parry numa bola que está claramente indo embora.
                 local directionCheckPassedForVeryClose = true
                 if ENABLE_DIRECTION_FILTER then -- Ainda pode usar o filtro de direção, mas talvez com um threshold menor
                     local vectorToPlayer = (humanoidRootPart.Position - ballPos).Unit
@@ -553,81 +553,306 @@ end
             end
         })
 
-        if not _G.SemiAllowedExecutors[_G.Executor] then
+        local Players = game:GetService("Players")
+        local Workspace = game:GetService("Workspace")
+        local VIM = game:GetService("VirtualInputManager")
+        local PathfindingService = game:GetService("PathfindingService")
 
-            local Players = game:GetService("Players")
-            local player = Players.LocalPlayer
-            local ReplicatedStorage = game:GetService("ReplicatedStorage")
-            local RunService = game:GetService("RunService")
+        getgenv().advancedAIData = getgenv().advancedAIData or {
+            ativo = false,
+            connections = {}
+        }
 
-            local character = player.Character or player.CharacterAdded:Wait()
-            local rootPart = character:WaitForChild("HumanoidRootPart")
-            local camera = workspace.CurrentCamera
+        local data = getgenv().advancedAIData
+        local player = Players.LocalPlayer
 
-            local remote
-            pcall(function()
-                remote = ReplicatedStorage:FindFirstChild("ReplicateCamLook")
-            end)
+        local function runAI(character)
+            if not character then return end
+            local humanoid = character:WaitForChild("Humanoid")
+            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-            local autocurveDirection = "Off"
-            local hookEnabled = false
+            local walkRadius = 150 
+            local ACTION_INTERVAL = 8
+            local SKILL_INTERVAL = 30
+            local FOLLOW_BALL_CHANCE = 40
+            local DOUBLE_JUMP_CHANCE = 50
+            local PATH_AGENT_RADIUS = 6
 
-            local old; old = hookmetamethod(game, "__namecall", function(self, ...)
-                if self == remote and getnamecallmethod() == "FireServer" then
-                    if hookEnabled then
-                        if checkcaller() then
-                            return old(self, ...)
+            task.spawn(function()
+                while data.ativo and character.Parent and humanoid.Health > 0 do
+                    task.wait(ACTION_INTERVAL + math.random(-1, 1))
+                    if data.ativo and player:GetAttribute("IsInGame") then
+                        local function pressKey(keyEnum)
+                            VIM:SendKeyEvent(true, keyEnum, false, game) 
+                            task.wait(0.05)
+                            VIM:SendKeyEvent(false, keyEnum, false, game)
+                        end
+                        if math.random(1, 100) <= DOUBLE_JUMP_CHANCE then
+                            pressKey(Enum.KeyCode.Space)
+                            task.wait(0.15)
+                            pressKey(Enum.KeyCode.Space)
+                            task.wait(0.1)
+                            pressKey(Enum.KeyCode.Q)
                         else
-                            return nil
+                            pressKey(Enum.KeyCode.Space)
+                            task.wait(0.15)
+                            pressKey(Enum.KeyCode.Q)
                         end
                     end
                 end
-                return old(self, ...)
             end)
 
-            local autoCurve = Tab:AddDropdown("autocurve", {
-                Title = "Auto curve",
-                Values = {"off", "back", "right", "left", "up", autoCurveRandom = "random"},
-                Multi = false,
-                Default = 1,
-            })
-
-            autoCurve:SetValue("off")
-            autoCurve:OnChanged(function(Value)
-                autocurveDirection = Value
-                hookEnabled = (autocurveDirection ~= "off")
-            end)
-
-            local function getCurveVector(direction)
-                local lookVector = camera.CFrame.LookVector
-                local x, y, z = lookVector.X, lookVector.Y, lookVector.Z
-
-                if direction == "back" then
-                    x, y, z = -x, -y, -z
-                elseif direction == "right" then
-                    x, z = -z, x
-                elseif direction == "left" then
-                    x, z = z, -x
-                elseif direction == "up" then
-                    y = y + 1
-                elseif direction == "random" then
-                    local ang = math.rad(math.random(-180, 180))
-                    local cos, sin = math.cos(ang), math.sin(ang)
-                    x, z = x * cos - z * sin, x * sin + z * cos
+            task.spawn(function()
+                local skillKeys = {Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four}
+                while data.ativo and character.Parent and humanoid.Health > 0 do
+                    task.wait(SKILL_INTERVAL + math.random(-5, 5))
+                    if data.ativo and player:GetAttribute("IsInGame") then
+                        local chosenKey = skillKeys[math.random(1, #skillKeys)]
+                        VIM:SendKeyEvent(true, chosenKey, false, game)
+                        task.wait(0.05)
+                        VIM:SendKeyEvent(false, chosenKey, false, game)
+                    end
                 end
+            end)
 
-                return x, y, z
+            task.spawn(function()
+                while data.ativo and character.Parent and humanoid.Health > 0 do
+                    if data.ativo and player:GetAttribute("IsInGame") then
+                        local destination
+                        local ball = Workspace:FindFirstChild("Ball")
+                        if ball and math.random(1, 100) <= FOLLOW_BALL_CHANCE then 
+                            destination = ball.Position 
+                        else 
+                            destination = humanoidRootPart.Position + Vector3.new(math.random(-walkRadius, walkRadius), 0, math.random(-walkRadius, walkRadius)) 
+                        end
+
+                        local path = PathfindingService:CreatePath({ AgentRadius = PATH_AGENT_RADIUS, AgentHeight = 6, AgentCanJump = false })
+                        local success = pcall(function() path:ComputeAsync(humanoidRootPart.Position, destination) end)
+
+                        if path.Status == Enum.PathStatus.Success then
+                            for _, waypoint in ipairs(path:GetWaypoints()) do
+                                if not (data.ativo and character.Parent and humanoid.Health > 0 and player:GetAttribute("IsInGame")) then break end
+                                humanoid:MoveTo(waypoint.Position)
+                                task.wait(0.1)
+                            end
+                        end
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        end
+
+        Tab:AddToggle("AIMovement", {
+            Title = "AI Movement",
+            Default = false,
+            Callback = function(Value)
+                if Value then
+                    data.ativo = true
+                    if data.connections.charAdded then data.connections.charAdded:Disconnect() end
+                    data.connections.charAdded = player.CharacterAdded:Connect(runAI)
+                    if player.Character then
+                        runAI(player.Character)
+                    end
+                else
+                    data.ativo = false
+                    for index, connection in pairs(data.connections) do
+                        connection:Disconnect()
+                        data.connections[index] = nil
+                    end
+                    if player.Character and player.Character:FindFirstChild("Humanoid") then
+                        player.Character.Humanoid:MoveTo(player.Character.HumanoidRootPart.Position)
+                    end
+                end
             end
+        })
 
-            RunService.RenderStepped:Connect(function()
-                if autocurveDirection ~= "off" then
-                    local x, y, z = getCurveVector(autocurveDirection)
-                    local id = tick()
-                    remote:FireServer(x, y, z, id)
+        Tab:AddButton({
+            Title = "Unlock all modes",
+            Callback = function()
+                local Players = game:GetService("Players")
+                local TeleportService = game:GetService("TeleportService")
+                local RunService = game:GetService("RunService")
+                local player = Players.LocalPlayer
+
+                local modes = {
+                    {
+                        lockedPath = function()
+                            return player.PlayerGui.PAGES.GameModesPage.ScrollingFrame.Holder1.RightHolder._prefab.LockedFrame
+                        end,
+                        clickPath = function()
+                            return player.PlayerGui.PAGES.GameModesPage.ScrollingFrame.Holder1.RightHolder._prefab.Frame
+                        end,
+                        placeId = 89775940525999
+                    },
+                    {
+                        lockedPath = function()
+                            return player.PlayerGui.PAGES.GameModesPage.ScrollingFrame.Holder2.Frame.LeftHolder:GetChildren()[3].LockedFrame
+                        end,
+                        clickPath = function()
+                            return player.PlayerGui.PAGES.GameModesPage.ScrollingFrame.Holder2.Frame.LeftHolder:GetChildren()[3].Frame
+                        end,
+                        placeId = 93356278413249
+                    },
+                    {
+                        lockedPath = function()
+                            return player.PlayerGui.PAGES.GameModesPage.ScrollingFrame.Holder2.Frame.LeftHolder._prefab.LockedFrame
+                        end,
+                        clickPath = function()
+                            return player.PlayerGui.PAGES.GameModesPage.ScrollingFrame.Holder2.Frame.LeftHolder._prefab.Frame
+                        end,
+                        placeId = 120016501071969
+                    },
+                    {
+                        lockedPath = function()
+                            return player.PlayerGui.PAGES.GameModesPage.ScrollingFrame.Holder2.Frame.RightHolder._prefab.LockedFrame
+                        end,
+                        clickPath = function()
+                            return player.PlayerGui.PAGES.GameModesPage.ScrollingFrame.Holder2.Frame.RightHolder._prefab.Frame
+                        end,
+                        placeId = 86767747022414
+                    }
+                }
+
+                -- Função para configurar clique/tap
+                local function setupClick(frameFunc, placeId)
+                    local success, frame = pcall(frameFunc)
+                    if success and frame then
+                        frame.Active = true
+                        frame.Selectable = true
+                        if not frame:GetAttribute("teleportConnected") then
+                            -- Activated funciona para mouse e toque
+                            frame.Activated:Connect(function()
+                                TeleportService:Teleport(placeId, player)
+                            end)
+                            frame:SetAttribute("teleportConnected", true)
+                        end
+                    end
                 end
+
+                -- Atualiza LockedFrames e cliques continuamente
+                RunService.RenderStepped:Connect(function()
+                    for _, mode in pairs(modes) do
+                        local success, lockedFrame = pcall(mode.lockedPath)
+                        if success and lockedFrame then
+                            lockedFrame:Destroy()
+                        end
+                        setupClick(mode.clickPath, mode.placeId)
+                    end
+                end)
+            end
+        })
+
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local RunService = game:GetService("RunService")
+
+        local character = player.Character or player.CharacterAdded:Wait()
+        local rootPart = character:WaitForChild("HumanoidRootPart")
+        local camera = workspace.CurrentCamera
+
+        local remote
+        pcall(function()
+            remote = ReplicatedStorage:FindFirstChild("ReplicateCamLook")
         end)
 
+        local autocurveDirection = "off"
+        local hookEnabled = false
+
+        local old; old = hookmetamethod(game, "__namecall", function(self, ...)
+            if self == remote and getnamecallmethod() == "FireServer" then
+                if hookEnabled then
+                    if checkcaller() then
+                        return old(self, ...)
+                    else
+                        return nil
+                    end
+                end
+            end
+            return old(self, ...)
+        end)
+
+        local autoCurve = Tab:AddDropdown("autocurve", {
+            Title = "Auto curve",
+            Values = {
+                "off","back","right","left","up","down","random",
+                "up_right","up_left","down_right","down_left",
+                "extreme_right","extreme_left","extreme_up","extreme_down",
+                "back_right","back_left","spiral"
+            },
+            Multi = false,
+            Default = 1,
+        })
+
+        autoCurve:SetValue("off")
+        autoCurve:OnChanged(function(Value)
+            autocurveDirection = Value
+            hookEnabled = (autocurveDirection ~= "off")
+        end)
+
+        local function rotateXZ(x,z,angle)
+            local cos,sin = math.cos(angle),math.sin(angle)
+            return x*cos - z*sin, x*sin + z*cos
         end
+
+        local function getCurveVector(direction)
+            local lookVector = camera.CFrame.LookVector
+            local x,y,z = lookVector.X, lookVector.Y, lookVector.Z
+
+            if direction == "back" then
+                x,y,z = -x,-y,-z
+            elseif direction == "right" then
+                x,z = -z,x
+            elseif direction == "left" then
+                x,z = z,-x
+            elseif direction == "up" then
+                y = y + 1
+            elseif direction == "down" then
+                y = y - 1
+            elseif direction == "up_right" then
+                y = y + 0.7
+                x,z = -z,x
+            elseif direction == "up_left" then
+                y = y + 0.7
+                x,z = z,-x
+            elseif direction == "down_right" then
+                y = y - 0.7
+                x,z = -z,x
+            elseif direction == "down_left" then
+                y = y - 0.7
+                x,z = z,-x
+            elseif direction == "extreme_right" then
+                x,z = rotateXZ(x,z,math.rad(90))
+            elseif direction == "extreme_left" then
+                x,z = rotateXZ(x,z,math.rad(-90))
+            elseif direction == "extreme_up" then
+                y = y + 2
+            elseif direction == "extreme_down" then
+                y = y - 2
+            elseif direction == "back_left" then
+                x,z = rotateXZ(-x,-z,math.rad(45))
+            elseif direction == "back_right" then
+                x,z = rotateXZ(-x,-z,math.rad(-45))
+            elseif direction == "spiral" then
+                local t = tick()
+                local ang = t % (2*math.pi)
+                x,z = rotateXZ(x,z,ang)
+                y = y + math.sin(t) * 0.5
+            elseif direction == "random" then
+                local ang = math.rad(math.random(-180,180))
+                x,z = rotateXZ(x,z,ang)
+            end
+
+            return x,y,z
+        end
+
+        RunService.RenderStepped:Connect(function()
+            if autocurveDirection ~= "off" then
+                local x,y,z = getCurveVector(autocurveDirection)
+                local id = tick()
+                remote:FireServer(x,y,z,id)
+            end
+        end)
 
         Tab:AddToggle("AutoReady", {
         Title = "Auto ready",
